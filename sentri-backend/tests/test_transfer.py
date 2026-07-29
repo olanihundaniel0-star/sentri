@@ -98,13 +98,24 @@ def _bridged(real_user_id: str = "bmoni-real-001") -> Any:
 @contextmanager
 def _frozen_at_cohort_time(test_case: dict[str, Any]) -> Iterator[None]:
     """create_transfer scores against datetime.now(), but cohort test cases are
-    anchored to seeds/generator.py's fixed _REFERENCE_DATE -- freeze "now" to
-    the cohort's own designed timestamp so its intended silent-pass/intervene
-    outcome doesn't depend on the wall-clock time the test happens to run at.
+    anchored to seeds/generator.py's fixed _REFERENCE_DATE -- freeze only the
+    *first* datetime.now() call (the TransactionEvent's timestamp) to the
+    cohort's own designed time, so its intended silent-pass/intervene outcome
+    doesn't depend on the wall-clock time the test happens to run at. Later
+    calls (a held transfer's created_at bookkeeping) fall through to the real
+    clock, since that timestamp is TTL bookkeeping, not scoring input, and
+    must reflect genuine wall-clock time for expiry pruning to behave sanely.
     """
     frozen = ingest_timestamp(test_case["event"]["timestamp"])
+    real_now = datetime.now
+    call_count = [0]
+
+    def _now(tz: Any = None) -> datetime:
+        call_count[0] += 1
+        return frozen if call_count[0] == 1 else real_now(tz)
+
     with patch.object(transfer_module, "datetime") as mock_datetime:
-        mock_datetime.now.return_value = frozen
+        mock_datetime.now.side_effect = _now
         yield
 
 
