@@ -19,9 +19,10 @@ synthetic data regardless of whether BMONI_API_KEY is set.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from eth_account.signers.local import LocalAccount
@@ -30,6 +31,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sentri.api.deps import get_bmoni_client, get_synthesizer, get_synthetic_bmoni_client
 from sentri.api.evaluate import evaluate
 from sentri.bmoni.client import BMONIClient as RealBMONIClient
+from sentri.bmoni.client import BMONITransferError
 from sentri.bmoni.identity_bridge import real_bmoni_user_id
 from sentri.bmoni.protocol import BMONIClient
 from sentri.bmoni.signing import signing_account
@@ -39,8 +41,29 @@ from sentri.models.verdict import VerdictKind
 from sentri.synthesizer.protocol import ExplanationSynthesizer
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-_pending_transfers: dict[str, TransferRequest] = {}
+_PENDING_TRANSFER_TTL = timedelta(minutes=10)
+
+
+@dataclass(frozen=True)
+class _PendingTransfer:
+    request: TransferRequest
+    created_at: datetime
+
+
+_pending_transfers: dict[str, _PendingTransfer] = {}
+
+
+def _prune_expired_transfers() -> None:
+    now = datetime.now(timezone.utc)
+    expired = [
+        transfer_id
+        for transfer_id, pending in _pending_transfers.items()
+        if now - pending.created_at > _PENDING_TRANSFER_TTL
+    ]
+    for transfer_id in expired:
+        del _pending_transfers[transfer_id]
 
 
 @dataclass(frozen=True)
@@ -71,13 +94,24 @@ async def _execute(
             status_code=503,
             detail="BMONI_API_KEY not configured; live transfers are unavailable",
         )
-    return await bmoni_client.transfer(
-        user_id=identity.real_user_id,
-        signer=identity.signer,
-        amount_kobo=request.amount_kobo,
-        destination=request.destination,
-        destination_type=request.destination_type,
-    )
+    try:
+        return await bmoni_client.transfer(
+            user_id=identity.real_user_id,
+            signer=identity.signer,
+            amount_kobo=request.amount_kobo,
+            destination=request.destination,
+            destination_type=request.destination_type,
+        )
+    except BMONITransferError:
+        logger.error(
+            "BMONI transfer failed",
+            exc_info=True,
+            extra={"user_id": request.user_id},
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="BMONI rejected or failed to process the transfer",
+        ) from None
 
 
 @router.post("/transfer", response_model=TransferResponse)
@@ -101,8 +135,11 @@ async def create_transfer(
     verdict = await evaluate(event, get_synthetic_bmoni_client(), synthesizer)
 
     if verdict.kind == VerdictKind.INTERVENE:
+        _prune_expired_transfers()
         transfer_id = uuid.uuid4().hex
-        _pending_transfers[transfer_id] = request
+        _pending_transfers[transfer_id] = _PendingTransfer(
+            request=request, created_at=datetime.now(timezone.utc)
+        )
         return TransferResponse(
             status=TransferStatus.HELD,
             transfer_id=transfer_id,
@@ -119,13 +156,14 @@ async def confirm_transfer(
     transfer_id: str,
     bmoni_client: BMONIClient = Depends(get_bmoni_client),
 ) -> TransferResponse:
-    request = _pending_transfers.pop(transfer_id, None)
-    if request is None:
+    _prune_expired_transfers()
+    pending = _pending_transfers.pop(transfer_id, None)
+    if pending is None:
         raise HTTPException(
             status_code=404,
-            detail="no held transfer with that id (already confirmed, or never existed)",
+            detail="no held transfer with that id (already confirmed, expired, or never existed)",
         )
 
-    identity = _require_bridged_identity(request.user_id)
-    result = await _execute(request, identity, bmoni_client)
+    identity = _require_bridged_identity(pending.request.user_id)
+    result = await _execute(pending.request, identity, bmoni_client)
     return TransferResponse(status=TransferStatus.EXECUTED, bmoni_result=result)

@@ -13,16 +13,19 @@ manually by BMONI staff in the room, keyed off the phone number used at
 signup -- there is no funding endpoint in the sandbox API.
 
 The wallet's owner keypair is generated locally and never sent anywhere
-except as a signature; its private key is printed once at the end so it can
-be held server-side for Prompt 13's transfer signing (BMONIClient.transfer
-via sentri.bmoni.signing) -- store it as an env var, never commit it.
+except as a signature. Its private key is written to a local, gitignored
+file under .bmoni_keys/ (never printed to the terminal) so it can later be
+held server-side as an env var for Prompt 13's transfer signing
+(BMONIClient.transfer via sentri.bmoni.signing).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -37,6 +40,7 @@ _COUNTRY_CODE = "NGA"
 _WALLET_CURRENCY = "CNGN"
 _POLL_INTERVAL_SECONDS = 3.0
 _POLL_MAX_ATTEMPTS = 20
+_KEYS_DIR = Path(__file__).resolve().parent.parent / ".bmoni_keys"
 
 
 def _client() -> httpx.Client:
@@ -126,6 +130,32 @@ def activate_nigeria_rail(
     response.raise_for_status()
 
 
+def write_key_file(user_id: str, address: str, private_key_hex: str, phone: str) -> Path:
+    """Persist the wallet owner's private key to a local, gitignored file.
+
+    Never print this key to the terminal -- terminal scrollback, shared
+    screens, and recorded demos are all plausible leak vectors for a key
+    that (however small the funds behind it) is a real signing credential.
+    """
+    _KEYS_DIR.mkdir(parents=True, exist_ok=True)
+    path = _KEYS_DIR / f"{user_id}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "bmoniUserId": user_id,
+                "address": address,
+                "privateKey": private_key_hex,
+                "phone": phone,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    path.chmod(0o600)
+    return path
+
+
 def poll_until_active(client: httpx.Client, user_id: str) -> dict[str, Any]:
     for attempt in range(1, _POLL_MAX_ATTEMPTS + 1):
         status = check_onboarding_status(client, user_id)
@@ -168,18 +198,24 @@ def main() -> None:
         final_status = poll_until_active(client, user_id)
         print(f"  final status = {final_status}")
 
+    key_path = write_key_file(user_id, account.address, account.key.hex(), args.phone)
+
     print()
     print("Onboarding complete. Test funds have no API -- ask BMONI staff in the room")
     print("to credit this identity (CNGN 1,000 / USDB $10) using the phone number below.")
     print(f"  bmoniUserId : {user_id}")
+    print(f"  address     : {account.address}")
     print(f"  phone       : {args.phone}")
     print()
-    print("Wallet owner private key (needed for Prompt 13 transfer signing).")
-    print("Store it server-side as an env var -- NEVER commit it or paste it into")
-    print("seeds/identity_bridge.json (that file is checked into git):")
-    print("  export BMONI_SIGNING_KEY__<seed_user_id>=" + account.key.hex())
+    print("Wallet owner private key written to (never printed to the terminal):")
+    print(f"  {key_path}")
+    print("To use it for Prompt 13 transfer signing, read its privateKey field and")
+    print("export it server-side, e.g.:")
+    print(f"  export BMONI_SIGNING_KEY__<seed_user_id>=$(jq -r .privateKey {key_path})")
+    print("(or open the file and copy the privateKey field by hand if jq isn't installed)")
     print("e.g. BMONI_SIGNING_KEY__user_001 if this identity is bridged to user_001")
-    print("in seeds/identity_bridge.json.")
+    print("in seeds/identity_bridge.json. Never commit this file or paste its contents")
+    print("into seeds/identity_bridge.json (that file is checked into git).")
 
 
 if __name__ == "__main__":

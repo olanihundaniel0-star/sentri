@@ -117,18 +117,19 @@ class BMONIClient:
                 f"/v1/users/{user_id}/smart-wallets/account/transactions"
             )
             response.raise_for_status()
-        except httpx.HTTPError:
+            payload = response.json()
+            logger.debug(
+                "BMONI raw transaction history response for user_id=%s: %r", user_id, payload
+            )
+
+            records = payload.get("transactions", []) if isinstance(payload, dict) else payload
+            parsed = (_parse_transaction(record) for record in records)
+            return [transaction for transaction in parsed if transaction is not None]
+        except (httpx.HTTPError, TypeError, ValueError):
             logger.warning(
                 "BMONI get_transaction_history failed for user_id=%s", user_id, exc_info=True
             )
             return []
-
-        payload = response.json()
-        logger.debug("BMONI raw transaction history response for user_id=%s: %r", user_id, payload)
-
-        records = payload.get("transactions", []) if isinstance(payload, dict) else payload
-        parsed = (_parse_transaction(record) for record in records)
-        return [transaction for transaction in parsed if transaction is not None]
 
     async def get_balance(self, user_id: str) -> Optional[dict[str, Any]]:
         try:
@@ -154,11 +155,17 @@ class BMONIClient:
 
         `destination` carries whatever fields the payout rail needs (bank
         account details for "nigeria", a wallet address for "crypto") and is
-        passed through to the proposal request as-is.
+        merged into the proposal request; its "amount", if it has one, is
+        always overridden by `amount_kobo` (see below).
 
         `signer` is the demo identity's server-held keypair (see
         sentri.bmoni.signing) -- the same one that owns the smart wallet,
         since the owner address is fixed at wallet-creation time.
+
+        `amount_kobo` always wins over any "amount" key `destination` happens
+        to carry: `destination` is caller-supplied and must never be able to
+        change what amount BMONI actually moves after Sentri has scored
+        `amount_kobo` -- that would let a transfer bypass scoring entirely.
 
         TODO(bmoni-schema): the proposal request body's exact field names are
         a best guess (amount as a decimal-naira float, destination fields
@@ -173,7 +180,7 @@ class BMONIClient:
         try:
             proposal_response = await self._client.post(
                 proposal_path,
-                json={"amount": amount_kobo / 100, **destination},
+                json={**destination, "amount": amount_kobo / 100},
             )
             proposal_response.raise_for_status()
         except httpx.HTTPError as exc:

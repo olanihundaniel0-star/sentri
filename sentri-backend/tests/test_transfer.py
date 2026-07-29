@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +13,7 @@ from fastapi import HTTPException
 import sentri.api.transfer as transfer_module
 from sentri.api.deps import TemplateOnlySynthesizer
 from sentri.api.transfer import confirm_transfer, create_transfer
+from sentri.bmoni.client import BMONITransferError
 from sentri.bmoni.stub import InMemoryBMONIStub
 from sentri.canonical.timestamps import ingest_timestamp
 from sentri.models.transfer import TransferRequest, TransferStatus
@@ -71,6 +73,20 @@ class _FakeRealClient:
         return {"proposalId": "prop-1", "status": "submitted"}
 
 
+class _FailingRealClient:
+    """Stand-in for sentri.bmoni.client.BMONIClient whose transfer() always fails."""
+
+    async def transfer(
+        self,
+        user_id: str,
+        signer: Any,
+        amount_kobo: int,
+        destination: dict[str, Any],
+        destination_type: str = "nigeria",
+    ) -> dict[str, Any]:
+        raise BMONITransferError("sandbox rejected the withdrawal proposal")
+
+
 def _bridged(real_user_id: str = "bmoni-real-001") -> Any:
     return patch.multiple(
         transfer_module,
@@ -118,7 +134,7 @@ async def test_create_transfer_holds_when_intervene_fires(
     assert response.explanation
     assert response.triggered_reasons
     assert fake_client.transfer_calls == []
-    assert transfer_module._pending_transfers[response.transfer_id] == request
+    assert transfer_module._pending_transfers[response.transfer_id].request == request
 
 
 async def test_create_transfer_executes_immediately_on_silent_pass(
@@ -176,3 +192,77 @@ async def test_confirm_transfer_404s_for_unknown_id() -> None:
         await confirm_transfer("does-not-exist", InMemoryBMONIStub())
 
     assert exc_info.value.status_code == 404
+
+
+async def test_create_transfer_returns_clean_502_on_bmoni_transfer_error(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["D"])
+
+    with (
+        _bridged(),
+        _frozen_at_cohort_time(cohort_test_cases["D"]),
+        patch.object(transfer_module, "RealBMONIClient", _FailingRealClient),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await create_transfer(request, _FailingRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+
+    assert exc_info.value.status_code == 502
+
+
+async def test_confirm_transfer_returns_clean_502_on_bmoni_transfer_error(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["A"])
+
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
+        held = await create_transfer(request, _FailingRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+    assert held.transfer_id is not None
+
+    with _bridged(), patch.object(transfer_module, "RealBMONIClient", _FailingRealClient):
+        with pytest.raises(HTTPException) as exc_info:
+            await confirm_transfer(held.transfer_id, _FailingRealClient())  # type: ignore[arg-type]
+
+    assert exc_info.value.status_code == 502
+
+
+async def test_confirm_transfer_404s_for_expired_pending_transfer(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["A"])
+
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
+        held = await create_transfer(request, _FakeRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+    assert held.transfer_id is not None
+
+    stale = transfer_module._pending_transfers[held.transfer_id]
+    transfer_module._pending_transfers[held.transfer_id] = transfer_module._PendingTransfer(
+        request=stale.request,
+        created_at=datetime.now(timezone.utc) - timedelta(minutes=11),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await confirm_transfer(held.transfer_id, InMemoryBMONIStub())
+
+    assert exc_info.value.status_code == 404
+    assert held.transfer_id not in transfer_module._pending_transfers
+
+
+async def test_expired_pending_transfers_are_pruned_on_the_next_write(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["A"])
+
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
+        held = await create_transfer(request, _FakeRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+
+    stale = transfer_module._pending_transfers[held.transfer_id]
+    transfer_module._pending_transfers[held.transfer_id] = transfer_module._PendingTransfer(
+        request=stale.request,
+        created_at=datetime.now(timezone.utc) - timedelta(minutes=11),
+    )
+
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
+        await create_transfer(request, _FakeRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+
+    assert held.transfer_id not in transfer_module._pending_transfers

@@ -127,6 +127,25 @@ async def test_get_transaction_history_non_2xx_falls_back_to_empty_and_warns(
 
 
 @respx.mock
+async def test_get_transaction_history_malformed_response_falls_back_to_empty_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A 200 response whose body is neither a dict nor a list (e.g. a bare
+    JSON number) must degrade the same way a failed HTTP call already does,
+    not raise an uncaught TypeError out of the method."""
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+        return_value=httpx.Response(200, json=42)
+    )
+
+    client = _make_client()
+    with caplog.at_level(logging.WARNING, logger="sentri.bmoni.client"):
+        history = await client.get_transaction_history("user_001")
+
+    assert history == []
+    assert any("get_transaction_history failed" in r.getMessage() for r in caplog.records)
+
+
+@respx.mock
 async def test_get_balance_non_2xx_returns_none() -> None:
     respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/balances").mock(
         return_value=httpx.Response(404, json={"error": "not found"})
@@ -179,6 +198,38 @@ async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
     assert sign_route.called
     sent_signature = json.loads(sign_route.calls[0].request.content)["signature"]
     assert len(sent_signature.removeprefix("0x")) == 130  # 65-byte ECDSA signature, hex-encoded
+
+
+@respx.mock
+async def test_transfer_amount_kobo_always_wins_over_a_destination_amount_key() -> None:
+    """destination is caller-supplied; it must never be able to change what
+    amount BMONI actually moves once amount_kobo has been scored. Build a
+    destination carrying its own conflicting "amount" and assert the request
+    body still reflects amount_kobo, not destination's value."""
+    proposal_route = respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(
+            200, json={"proposalId": "prop-1", "signPayload": _EIP712_SIGN_PAYLOAD}
+        )
+    )
+    respx.post(f"{_BASE_URL}/v1/users/user_001/smart-wallets/proposals/prop-1/sign").mock(
+        return_value=httpx.Response(200, json={"status": "submitted"})
+    )
+
+    client = _make_client()
+    await client.transfer(
+        user_id="user_001",
+        signer=Account.create(),
+        amount_kobo=100_000,
+        destination={
+            "accountNumber": "0001112222",
+            "bankCode": "044",
+            "amount": 500_000_000,
+        },
+    )
+
+    sent_body = json.loads(proposal_route.calls[0].request.content)
+    assert sent_body["amount"] == 1000.0
+    assert sent_body["accountNumber"] == "0001112222"
 
 
 @respx.mock

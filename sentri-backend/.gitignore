@@ -1,6 +1,9 @@
 # Environment
 .env
 
+# BMONI demo identity private keys (scripts/bmoni_onboard.py) -- never commit
+.bmoni_keys/
+
 # Python
 __pycache__/
 *.py[cod]
