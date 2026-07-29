@@ -20,16 +20,6 @@ class BMONIClient(Protocol):
         """Return the user's social graph, or None when BMONI does not expose one."""
         ...
 
-    async def log_decision(
-        self,
-        user_id: str,
-        event_id: str,
-        decision: str,
-        explanation: Optional[str],
-    ) -> None:
-        """Record a Sentri verdict back to BMONI for audit/feedback purposes."""
-        ...
-
     async def on_transfer_intent_hook(self, callback: Any) -> None:
         """Register a pre-authorization callback. Signature TBD pending BMONI's contract."""
         ...

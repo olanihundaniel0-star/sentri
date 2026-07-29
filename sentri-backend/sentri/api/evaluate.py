@@ -214,6 +214,7 @@ async def evaluate(
             "evaluate_complete",
             extra={
                 "user_id": event.user_id,
+                "event_id": _derive_event_id(event),
                 "verdict_kind": verdict.kind.value,
                 "triggered_reasons": (
                     [r.value for r in verdict.triggered_reasons]
@@ -221,6 +222,7 @@ async def evaluate(
                     else []
                 ),
                 "synthesizer_used": verdict.synthesizer_used,
+                "explanation": verdict.explanation,
                 "latency_ms": elapsed_ms,
             },
         )
@@ -233,22 +235,5 @@ async def evaluate(
             extra={"user_id": event.user_id, "recipient_id": event.recipient_id},
         )
         return Verdict(kind=VerdictKind.SILENT_PASS, synthesizer_used="none")
-
-    try:
-        event_id = _derive_event_id(event)
-        await bmoni_client.log_decision(
-            user_id=event.user_id,
-            event_id=event_id,
-            decision=verdict.kind.name,
-            explanation=verdict.explanation,
-        )
-    except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        logger.warning(
-            "log_decision failed",
-            exc_info=True,
-            extra={"user_id": event.user_id},
-        )
 
     return verdict

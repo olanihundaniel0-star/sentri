@@ -28,9 +28,6 @@ class _FakeRealClient:
     async def get_social_graph(self, user_id: str) -> Optional[SocialGraph]:
         raise AssertionError("get_social_graph should not be called by the identity bridge")
 
-    async def log_decision(self, *args: object, **kwargs: object) -> None:
-        raise AssertionError("log_decision should not be called by the identity bridge")
-
     async def on_transfer_intent_hook(self, callback: object) -> None:
         raise AssertionError("on_transfer_intent_hook should not be called by the identity bridge")
 

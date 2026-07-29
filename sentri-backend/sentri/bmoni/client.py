@@ -206,18 +206,11 @@ class BMONIClient:
         return result
 
     async def get_social_graph(self, user_id: str) -> Optional[SocialGraph]:
-        """No social-graph endpoint is documented; graph_proximity keeps its
-        existing 0.0 fallback, same as for any user with no graph."""
-        return None
-
-    async def log_decision(
-        self,
-        user_id: str,
-        event_id: str,
-        decision: str,
-        explanation: Optional[str],
-    ) -> None:
-        """No decision-log write-back endpoint is documented; deliberate no-op."""
+        """No social-graph/friends endpoint is documented; returning None here
+        makes graph.proximity.proximity() treat this the same as any other
+        user with no exposed graph -- a missingness mask (never None literal
+        0.0), so GRAPH_PROXIMITY simply never fires rather than firing on a
+        false "no connection" reading. See sentri/graph/proximity.py."""
         return None
 
     async def on_transfer_intent_hook(self, callback: Any) -> None:

@@ -150,10 +150,6 @@ async def test_get_social_graph_is_none() -> None:
     assert await _make_client().get_social_graph("user_001") is None
 
 
-async def test_log_decision_is_a_noop() -> None:
-    await _make_client().log_decision("user_001", "evt-1", "silent_pass", None)
-
-
 async def test_on_transfer_intent_hook_is_a_noop() -> None:
     await _make_client().on_transfer_intent_hook(lambda *_: None)
 
