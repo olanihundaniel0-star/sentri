@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, Optional
 
 _DEFAULT_THRESHOLDS: dict[str, float | bool] = {
     "recipient_familiarity_below": 0.15,
@@ -68,6 +68,13 @@ class Config:
     SUPPORTED_LANGUAGES: list[str] = _env_str_list("SUPPORTED_LANGUAGES", ["en"])
     DEFAULT_LANGUAGE: str = _env_str("DEFAULT_LANGUAGE", "en")
     DEBUG_ENDPOINTS_ENABLED: bool = _env_bool("DEBUG_ENDPOINTS_ENABLED", True)
+    # Sandbox base URL already includes /v1 on every documented path; adapters
+    # must not append another /v1 prefix. No default for BMONI_API_KEY: it's
+    # only required once something actually constructs a real BMONIClient
+    # (sentri.bmoni.client), not at import time, so the rest of the app keeps
+    # working without it configured.
+    BMONI_BASE_URL: str = _env_str("BMONI_BASE_URL", "https://embedded-dev.bmoni.com")
+    BMONI_API_KEY: Optional[str] = os.getenv("BMONI_API_KEY")
 
 
 # Module-level aliases for convenient imports.
@@ -82,3 +89,5 @@ LLM_TIMEOUT_SECONDS = Config.LLM_TIMEOUT_SECONDS
 SUPPORTED_LANGUAGES = Config.SUPPORTED_LANGUAGES
 DEFAULT_LANGUAGE = Config.DEFAULT_LANGUAGE
 DEBUG_ENDPOINTS_ENABLED = Config.DEBUG_ENDPOINTS_ENABLED
+BMONI_BASE_URL = Config.BMONI_BASE_URL
+BMONI_API_KEY = Config.BMONI_API_KEY

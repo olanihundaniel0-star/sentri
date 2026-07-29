@@ -13,6 +13,7 @@ from typing import Any
 
 import anthropic
 
+from sentri.bmoni.client import BMONIClient as RealBMONIClient
 from sentri.bmoni.protocol import BMONIClient
 from sentri.bmoni.stub import InMemoryBMONIStub
 from sentri.models.deviation import DeviationVector, TriggerReason
@@ -39,7 +40,14 @@ class TemplateOnlySynthesizer:
 
 @lru_cache(maxsize=1)
 def get_bmoni_client() -> BMONIClient:
-    """Dependency factory for the BMONI adapter. Returns the in-memory stub by default."""
+    """Dependency factory for the BMONI adapter.
+
+    Uses the real sandbox-backed RealBMONIClient when BMONI_API_KEY is set;
+    otherwise falls back to the in-memory stub, same pattern as get_synthesizer.
+    """
+    api_key = os.environ.get("BMONI_API_KEY")
+    if api_key:
+        return RealBMONIClient(api_key=api_key)
     seed_path = os.environ.get("SENTRI_SEED_PATH")
     return InMemoryBMONIStub(seed_path=seed_path)
 
