@@ -1,0 +1,159 @@
+"""Tests for POST /transfer and /transfer/{id}/confirm (Prompt 13)."""
+
+from __future__ import annotations
+
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi import HTTPException
+
+import sentri.api.transfer as transfer_module
+from sentri.api.deps import TemplateOnlySynthesizer
+from sentri.api.transfer import confirm_transfer, create_transfer
+from sentri.bmoni.stub import InMemoryBMONIStub
+from sentri.models.transfer import TransferRequest, TransferStatus
+from seeds.generator import generate_seed_data, write_seed_data
+
+
+@pytest.fixture(scope="module")
+def cohort_test_cases() -> dict[str, dict[str, Any]]:
+    write_seed_data()
+    data = generate_seed_data()
+    by_cohort: dict[str, dict[str, Any]] = {}
+    for test_case in data["test_cases"]:
+        by_cohort.setdefault(test_case["cohort"], test_case)
+    return by_cohort
+
+
+def _transfer_request(test_case: dict[str, Any]) -> TransferRequest:
+    event = test_case["event"]
+    return TransferRequest(
+        user_id=event["user_id"],
+        amount_kobo=event["amount_kobo"],
+        recipient_id=event["recipient_id"],
+        currency=event.get("currency", "NGN"),
+        destination={"accountNumber": "0001112222", "bankCode": "044"},
+    )
+
+
+@pytest.fixture(autouse=True)
+def _clear_pending_transfers() -> Any:
+    transfer_module._pending_transfers.clear()
+    yield
+    transfer_module._pending_transfers.clear()
+
+
+class _FakeRealClient:
+    """Stand-in for sentri.bmoni.client.BMONIClient, patched in as RealBMONIClient."""
+
+    def __init__(self) -> None:
+        self.transfer_calls: list[dict[str, Any]] = []
+
+    async def transfer(
+        self,
+        user_id: str,
+        signer: Any,
+        amount_kobo: int,
+        destination: dict[str, Any],
+        destination_type: str = "nigeria",
+    ) -> dict[str, Any]:
+        self.transfer_calls.append(
+            {
+                "user_id": user_id,
+                "amount_kobo": amount_kobo,
+                "destination": destination,
+                "destination_type": destination_type,
+            }
+        )
+        return {"proposalId": "prop-1", "status": "submitted"}
+
+
+def _bridged(real_user_id: str = "bmoni-real-001") -> Any:
+    return patch.multiple(
+        transfer_module,
+        real_bmoni_user_id=MagicMock(return_value=real_user_id),
+        signing_account=MagicMock(return_value=MagicMock()),
+    )
+
+
+async def test_create_transfer_rejects_unbridged_user(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["D"])
+    request = request.model_copy(update={"user_id": "user_099"})
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_transfer(request, InMemoryBMONIStub(), TemplateOnlySynthesizer())
+
+    assert exc_info.value.status_code == 400
+
+
+async def test_create_transfer_holds_when_intervene_fires(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["A"])
+    fake_client = _FakeRealClient()
+
+    with _bridged():
+        response = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
+
+    assert response.status == TransferStatus.HELD
+    assert response.transfer_id is not None
+    assert response.explanation
+    assert response.triggered_reasons
+    assert fake_client.transfer_calls == []
+    assert transfer_module._pending_transfers[response.transfer_id] == request
+
+
+async def test_create_transfer_executes_immediately_on_silent_pass(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["D"])
+    fake_client = _FakeRealClient()
+
+    with _bridged(), patch.object(transfer_module, "RealBMONIClient", _FakeRealClient):
+        response = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
+
+    assert response.status == TransferStatus.EXECUTED
+    assert response.bmoni_result == {"proposalId": "prop-1", "status": "submitted"}
+    assert len(fake_client.transfer_calls) == 1
+    assert fake_client.transfer_calls[0]["user_id"] == "bmoni-real-001"
+    assert transfer_module._pending_transfers == {}
+
+
+async def test_create_transfer_503s_when_bmoni_client_is_not_real(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["D"])
+
+    with _bridged():
+        with pytest.raises(HTTPException) as exc_info:
+            await create_transfer(request, InMemoryBMONIStub(), TemplateOnlySynthesizer())
+
+    assert exc_info.value.status_code == 503
+
+
+async def test_confirm_transfer_executes_pending_and_removes_it(
+    cohort_test_cases: dict[str, dict[str, Any]],
+) -> None:
+    request = _transfer_request(cohort_test_cases["A"])
+    fake_client = _FakeRealClient()
+
+    with _bridged():
+        held = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
+    assert held.transfer_id is not None
+
+    with _bridged(), patch.object(transfer_module, "RealBMONIClient", _FakeRealClient):
+        response = await confirm_transfer(held.transfer_id, fake_client)  # type: ignore[arg-type]
+
+    assert response.status == TransferStatus.EXECUTED
+    assert len(fake_client.transfer_calls) == 1
+    assert held.transfer_id not in transfer_module._pending_transfers
+
+
+async def test_confirm_transfer_404s_for_unknown_id() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        await confirm_transfer("does-not-exist", InMemoryBMONIStub())
+
+    assert exc_info.value.status_code == 404

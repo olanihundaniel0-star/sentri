@@ -9,6 +9,15 @@ module relies on:
   Content-Type: application/json.
 - Reads: GET /v1/users/{userId}/smart-wallets/account/transactions and
   .../account/balances.
+- Transfers (confirmed spec, Prompt 13): POST
+  /v1/users/{userId}/withdrawal/wallet/nigeria (bank payout) or
+  .../withdrawal/smart-wallet/crypto (on-chain payout) each return
+  {proposalId, signPayload} in one call. The payload is EIP-712 typed data,
+  signed server-side with eth_account.Account.sign_typed_data (see
+  sentri.bmoni.signing for where the keypair comes from), then POST
+  /v1/users/{userId}/smart-wallets/proposals/{proposalId}/sign with
+  {signature}. BMONI's KMS co-signature is appended automatically
+  server-side -- nothing further is needed from us.
 - No documented endpoints exist for a social graph, a decision-log
   write-back, or a transfer-intent pre-authorization hook. Those methods are
   therefore deliberate no-ops here (not network calls that would always
@@ -23,9 +32,11 @@ sandbox call, and the field mapping below is a best guess pending that.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import httpx
+from eth_account import Account
+from eth_account.signers.local import LocalAccount
 
 from sentri.canonical.timestamps import ingest_timestamp
 from sentri.config import Config
@@ -33,6 +44,16 @@ from sentri.models.profile import SocialGraph
 from sentri.models.transaction import Transaction
 
 logger = logging.getLogger(__name__)
+
+DestinationType = Literal["nigeria", "crypto"]
+
+
+class BMONITransferError(RuntimeError):
+    """Raised when a live withdrawal proposal, its signing, or submission fails.
+
+    Unlike the read methods below, transfer() never swallows failures into an
+    empty/None result: moving real (if tiny, sandbox) funds must fail loudly.
+    """
 
 
 def _parse_transaction(raw: dict[str, Any]) -> Optional[Transaction]:
@@ -120,6 +141,71 @@ class BMONIClient:
         payload: dict[str, Any] = response.json()
         logger.debug("BMONI raw balance response for user_id=%s: %r", user_id, payload)
         return payload
+
+    async def transfer(
+        self,
+        user_id: str,
+        signer: LocalAccount,
+        amount_kobo: int,
+        destination: dict[str, Any],
+        destination_type: DestinationType = "nigeria",
+    ) -> dict[str, Any]:
+        """Execute a live withdrawal end-to-end: propose, sign server-side, submit.
+
+        `destination` carries whatever fields the payout rail needs (bank
+        account details for "nigeria", a wallet address for "crypto") and is
+        passed through to the proposal request as-is.
+
+        `signer` is the demo identity's server-held keypair (see
+        sentri.bmoni.signing) -- the same one that owns the smart wallet,
+        since the owner address is fixed at wallet-creation time.
+
+        TODO(bmoni-schema): the proposal request body's exact field names are
+        a best guess (amount as a decimal-naira float, destination fields
+        merged in directly); confirm against the first live response.
+        """
+        proposal_path = (
+            f"/v1/users/{user_id}/withdrawal/wallet/nigeria"
+            if destination_type == "nigeria"
+            else f"/v1/users/{user_id}/withdrawal/smart-wallet/crypto"
+        )
+
+        try:
+            proposal_response = await self._client.post(
+                proposal_path,
+                json={"amount": amount_kobo / 100, **destination},
+            )
+            proposal_response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise BMONITransferError(f"withdrawal proposal request failed: {exc}") from exc
+
+        proposal = proposal_response.json()
+        logger.debug(
+            "BMONI raw withdrawal-proposal response for user_id=%s: %r", user_id, proposal
+        )
+
+        try:
+            proposal_id = proposal["proposalId"]
+            sign_payload = proposal["signPayload"]
+        except KeyError as exc:
+            raise BMONITransferError(
+                f"withdrawal proposal response missing {exc}: {proposal!r}"
+            ) from exc
+
+        signed = Account.sign_typed_data(signer.key, full_message=sign_payload)
+
+        try:
+            sign_response = await self._client.post(
+                f"/v1/users/{user_id}/smart-wallets/proposals/{proposal_id}/sign",
+                json={"signature": signed.signature.hex()},
+            )
+            sign_response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise BMONITransferError(f"proposal signature submission failed: {exc}") from exc
+
+        result: dict[str, Any] = sign_response.json()
+        logger.debug("BMONI raw proposal-sign response for user_id=%s: %r", user_id, result)
+        return result
 
     async def get_social_graph(self, user_id: str) -> Optional[SocialGraph]:
         """No social-graph endpoint is documented; graph_proximity keeps its

@@ -16,6 +16,7 @@ dependencies = [
     "numpy==2.2.4",
     "python-dotenv==1.1.0",
     "httpx==0.28.1",
+    "eth-account>=0.13.7",
 ]
 
 [project.optional-dependencies]
@@ -24,9 +25,6 @@ dev = [
     "pytest-asyncio==0.25.3",
     "ruff==0.11.2",
     "mypy==1.15.0",
-]
-scripts = [
-    "eth-account>=0.13.7",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -45,12 +43,6 @@ line-length = 100
 python_version = "3.11"
 strict = true
 packages = ["sentri"]
-
-[[tool.mypy.overrides]]
-# eth-account only ships under the optional `scripts` extra (see
-# scripts/bmoni_onboard.py), so it isn't installed in the default dev env.
-module = "eth_account.*"
-ignore_missing_imports = true
 
 [dependency-groups]
 dev = [

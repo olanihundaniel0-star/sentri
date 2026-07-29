@@ -1,8 +1,8 @@
 """Standalone BMONI sandbox onboarding script. Not part of the FastAPI app.
 
-Run manually, once per demo identity, with the `scripts` extra installed:
+Run manually, once per demo identity:
 
-    uv run --extra scripts python scripts/bmoni_onboard.py \\
+    uv run python scripts/bmoni_onboard.py \\
         --name "Ada" --email ada@example.com --phone "+2348000000001"
 
 Walks one identity through the mandatory sandbox sequence documented in the
@@ -11,6 +11,11 @@ check KYC -> activate the NGN rail -> poll onboarding status until active.
 Then stops: test funds (CNGN 1,000 / USDB $10 per wallet) are credited
 manually by BMONI staff in the room, keyed off the phone number used at
 signup -- there is no funding endpoint in the sandbox API.
+
+The wallet's owner keypair is generated locally and never sent anywhere
+except as a signature; its private key is printed once at the end so it can
+be held server-side for Prompt 13's transfer signing (BMONIClient.transfer
+via sentri.bmoni.signing) -- store it as an env var, never commit it.
 """
 
 from __future__ import annotations
@@ -21,15 +26,11 @@ import time
 from typing import Any
 
 import httpx
+from eth_account import Account
+from eth_account.messages import encode_defunct
+from eth_account.signers.local import LocalAccount
 
 from sentri.config import Config
-
-try:
-    from eth_account import Account
-    from eth_account.messages import encode_defunct
-except ImportError:  # pragma: no cover
-    Account = None
-    encode_defunct = None
 
 _TEST_BVN = "22222222222"
 _COUNTRY_CODE = "NGA"
@@ -59,7 +60,7 @@ def create_user(client: httpx.Client, first_name: str, email: str, phone: str) -
     return str(body["bmoniUserId"])
 
 
-def create_wallet(client: httpx.Client, user_id: str) -> dict[str, Any]:
+def create_wallet(client: httpx.Client, user_id: str) -> tuple[dict[str, Any], LocalAccount]:
     """eth_account for the keypair + owner-proof signature.
 
     cNGN's own meta-transaction (ERC-2771 relayer) architecture means a
@@ -69,18 +70,16 @@ def create_wallet(client: httpx.Client, user_id: str) -> dict[str, Any]:
     loud httpx.HTTPStatusError, not a silent failure -- there's no fallback
     signing path stubbed in, by design.
 
+    Returns the wallet-creation response alongside the generated account, so
+    the caller can hold onto its private key for later transfer signing
+    (Prompt 13) -- the smart wallet's owner address is fixed at creation
+    time, so this exact keypair is the only one that can ever sign for it.
+
     TODO(bmoni-schema): challenge/response field names (message, challengeId,
     address, index) are best guesses pending a confirmed schema; expect to
     adjust them the first time this hits a live sandbox.
     """
-    if Account is None or encode_defunct is None:
-        print(
-            "eth-account is not installed; re-run with `uv run --extra scripts ...`",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-
-    account = Account.create()
+    account: LocalAccount = Account.create()
 
     challenge_response = client.post(
         f"/v1/users/{user_id}/smart-wallets/owner-proof-challenges",
@@ -102,7 +101,7 @@ def create_wallet(client: httpx.Client, user_id: str) -> dict[str, Any]:
     )
     create_response.raise_for_status()
     wallet: dict[str, Any] = create_response.json()
-    return wallet
+    return wallet, account
 
 
 def check_onboarding_status(client: httpx.Client, user_id: str) -> dict[str, Any]:
@@ -152,7 +151,7 @@ def main() -> None:
         print(f"  bmoniUserId = {user_id}")
 
         print("Creating managed smart wallet ...")
-        wallet = create_wallet(client, user_id)
+        wallet, account = create_wallet(client, user_id)
         wallet_address = wallet.get("address") or wallet.get("walletAddress")
         if not isinstance(wallet_address, str):
             raise RuntimeError(f"wallet creation response missing an address: {wallet!r}")
@@ -174,6 +173,13 @@ def main() -> None:
     print("to credit this identity (CNGN 1,000 / USDB $10) using the phone number below.")
     print(f"  bmoniUserId : {user_id}")
     print(f"  phone       : {args.phone}")
+    print()
+    print("Wallet owner private key (needed for Prompt 13 transfer signing).")
+    print("Store it server-side as an env var -- NEVER commit it or paste it into")
+    print("seeds/identity_bridge.json (that file is checked into git):")
+    print("  export BMONI_SIGNING_KEY__<seed_user_id>=" + account.key.hex())
+    print("e.g. BMONI_SIGNING_KEY__user_001 if this identity is bridged to user_001")
+    print("in seeds/identity_bridge.json.")
 
 
 if __name__ == "__main__":

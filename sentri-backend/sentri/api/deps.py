@@ -53,6 +53,19 @@ def get_bmoni_client() -> BMONIClient:
 
 
 @lru_cache(maxsize=1)
+def get_synthetic_bmoni_client() -> InMemoryBMONIStub:
+    """Always the in-memory synthetic stub, regardless of BMONI_API_KEY.
+
+    Lets /transfer score a bridged demo user's pending transfer against their
+    synthetic historical baseline (Prompt 12) even when get_bmoni_client()
+    resolves to the real sandbox client for actually executing the live
+    withdrawal (Prompt 13).
+    """
+    seed_path = os.environ.get("SENTRI_SEED_PATH")
+    return InMemoryBMONIStub(seed_path=seed_path)
+
+
+@lru_cache(maxsize=1)
 def get_synthesizer() -> ExplanationSynthesizer:
     """Dependency factory for the Tier 2 synthesizer.
 

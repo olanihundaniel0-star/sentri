@@ -2,15 +2,33 @@
 
 from __future__ import annotations
 
+import json
 import logging
 
 import httpx
 import pytest
 import respx
+from eth_account import Account
 
-from sentri.bmoni.client import BMONIClient
+from sentri.bmoni.client import BMONIClient, BMONITransferError
 
 _BASE_URL = "https://embedded-dev.bmoni.com"
+
+_EIP712_SIGN_PAYLOAD = {
+    "types": {
+        "EIP712Domain": [
+            {"name": "name", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "chainId", "type": "uint256"},
+        ],
+        "Withdrawal": [
+            {"name": "amount", "type": "uint256"},
+        ],
+    },
+    "domain": {"name": "BMONI", "version": "1", "chainId": 1},
+    "primaryType": "Withdrawal",
+    "message": {"amount": 1000},
+}
 
 
 def _make_client() -> BMONIClient:
@@ -138,3 +156,111 @@ async def test_log_decision_is_a_noop() -> None:
 
 async def test_on_transfer_intent_hook_is_a_noop() -> None:
     await _make_client().on_transfer_intent_hook(lambda *_: None)
+
+
+@respx.mock
+async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
+    signer = Account.create()
+    proposal_route = respx.post(
+        f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria"
+    ).mock(
+        return_value=httpx.Response(
+            200, json={"proposalId": "prop-1", "signPayload": _EIP712_SIGN_PAYLOAD}
+        )
+    )
+    sign_route = respx.post(
+        f"{_BASE_URL}/v1/users/user_001/smart-wallets/proposals/prop-1/sign"
+    ).mock(return_value=httpx.Response(200, json={"status": "submitted"}))
+
+    client = _make_client()
+    result = await client.transfer(
+        user_id="user_001",
+        signer=signer,
+        amount_kobo=100_000,
+        destination={"accountNumber": "0001112222", "bankCode": "044"},
+    )
+
+    assert result == {"status": "submitted"}
+    assert proposal_route.called
+    assert sign_route.called
+    sent_signature = json.loads(sign_route.calls[0].request.content)["signature"]
+    assert sent_signature.startswith("0x")
+
+
+@respx.mock
+async def test_transfer_uses_crypto_endpoint_for_crypto_destination() -> None:
+    signer = Account.create()
+    proposal_route = respx.post(
+        f"{_BASE_URL}/v1/users/user_001/withdrawal/smart-wallet/crypto"
+    ).mock(
+        return_value=httpx.Response(
+            200, json={"proposalId": "prop-2", "signPayload": _EIP712_SIGN_PAYLOAD}
+        )
+    )
+    respx.post(f"{_BASE_URL}/v1/users/user_001/smart-wallets/proposals/prop-2/sign").mock(
+        return_value=httpx.Response(200, json={"status": "submitted"})
+    )
+
+    client = _make_client()
+    await client.transfer(
+        user_id="user_001",
+        signer=signer,
+        amount_kobo=100_000,
+        destination={"address": "0xabc"},
+        destination_type="crypto",
+    )
+
+    assert proposal_route.called
+
+
+@respx.mock
+async def test_transfer_raises_on_proposal_request_failure() -> None:
+    respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(500, json={"error": "boom"})
+    )
+
+    client = _make_client()
+    with pytest.raises(BMONITransferError):
+        await client.transfer(
+            user_id="user_001",
+            signer=Account.create(),
+            amount_kobo=100_000,
+            destination={"accountNumber": "0001112222", "bankCode": "044"},
+        )
+
+
+@respx.mock
+async def test_transfer_raises_when_proposal_response_missing_fields() -> None:
+    respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(200, json={"unexpected": "shape"})
+    )
+
+    client = _make_client()
+    with pytest.raises(BMONITransferError):
+        await client.transfer(
+            user_id="user_001",
+            signer=Account.create(),
+            amount_kobo=100_000,
+            destination={"accountNumber": "0001112222", "bankCode": "044"},
+        )
+
+
+@respx.mock
+async def test_transfer_raises_on_sign_submission_failure() -> None:
+    respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(
+            200, json={"proposalId": "prop-1", "signPayload": _EIP712_SIGN_PAYLOAD}
+        )
+    )
+    respx.post(f"{_BASE_URL}/v1/users/user_001/smart-wallets/proposals/prop-1/sign").mock(
+        return_value=httpx.Response(400, json={"error": "bad signature"})
+    )
+
+    client = _make_client()
+    with pytest.raises(BMONITransferError):
+        await client.transfer(
+            user_id="user_001",
+            signer=Account.create(),
+            amount_kobo=100_000,
+            destination={"accountNumber": "0001112222", "bankCode": "044"},
+        )
