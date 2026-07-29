@@ -24,8 +24,10 @@ def create_app() -> FastAPI:
 
     from sentri.api.debug import router as debug_router
     from sentri.api.evaluate import router as evaluate_router
+    from sentri.api.transfer import router as transfer_router
 
     app.include_router(evaluate_router)
+    app.include_router(transfer_router)
     app.include_router(debug_router)
 
     return app

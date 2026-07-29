@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from math import isclose
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -183,15 +183,23 @@ async def test_evaluate_includes_scorer_aligned_drift_facts_when_amount_drift_tr
 
 
 async def test_evaluate_logs_intervene_decision(
-    cohort_test_cases: dict[str, dict[str, Any]],
+    cohort_test_cases: dict[str, dict[str, Any]], caplog: pytest.LogCaptureFixture
 ) -> None:
-    stub = InMemoryBMONIStub()
-    verdict = await evaluate(_event(cohort_test_cases["A"]), stub, _StubSynthesizer())
+    """No BMONI decision-log endpoint exists (Prompt 14): the decision is
+    folded into the existing evaluate_complete structured log line instead of
+    a separate BMONI-side write."""
+    with caplog.at_level(logging.INFO, logger="sentri.api.evaluate"):
+        verdict = await evaluate(
+            _event(cohort_test_cases["A"]), InMemoryBMONIStub(), _StubSynthesizer()
+        )
 
     assert verdict.kind == VerdictKind.INTERVENE
-    assert len(stub.decisions) == 1
-    logged = stub.decisions[0]
-    assert logged["decision"] == "INTERVENE"
+
+    complete_records = [r for r in caplog.records if r.message == "evaluate_complete"]
+    assert len(complete_records) == 1
+    logged = complete_records[0].__dict__
+
+    assert logged["verdict_kind"] == "intervene"
     assert logged["explanation"] == verdict.explanation
     event_id = logged["event_id"]
     assert isinstance(event_id, str)
@@ -200,60 +208,43 @@ async def test_evaluate_logs_intervene_decision(
 
 
 async def test_evaluate_logs_silent_pass_decision(
-    cohort_test_cases: dict[str, dict[str, Any]],
+    cohort_test_cases: dict[str, dict[str, Any]], caplog: pytest.LogCaptureFixture
 ) -> None:
-    stub = InMemoryBMONIStub()
-    verdict = await evaluate(_event(cohort_test_cases["D"]), stub, _StubSynthesizer())
+    with caplog.at_level(logging.INFO, logger="sentri.api.evaluate"):
+        verdict = await evaluate(
+            _event(cohort_test_cases["D"]), InMemoryBMONIStub(), _StubSynthesizer()
+        )
 
     assert verdict.kind == VerdictKind.SILENT_PASS
-    assert len(stub.decisions) == 1
-    logged = stub.decisions[0]
-    assert logged["decision"] == "SILENT_PASS"
+
+    complete_records = [r for r in caplog.records if r.message == "evaluate_complete"]
+    assert len(complete_records) == 1
+    logged = complete_records[0].__dict__
+
+    assert logged["verdict_kind"] == "silent_pass"
     assert logged["explanation"] is None
 
 
 async def test_evaluate_derives_deterministic_event_id(
-    cohort_test_cases: dict[str, dict[str, Any]],
+    cohort_test_cases: dict[str, dict[str, Any]], caplog: pytest.LogCaptureFixture
 ) -> None:
     test_case = cohort_test_cases["A"]
 
-    stub_one = InMemoryBMONIStub()
-    await evaluate(_event(test_case), stub_one, _StubSynthesizer())
+    with caplog.at_level(logging.INFO, logger="sentri.api.evaluate"):
+        await evaluate(_event(test_case), InMemoryBMONIStub(), _StubSynthesizer())
+        first_event_id = [r for r in caplog.records if r.message == "evaluate_complete"][
+            0
+        ].__dict__["event_id"]
 
-    stub_two = InMemoryBMONIStub()
-    await evaluate(_event(test_case), stub_two, _StubSynthesizer())
+    caplog.clear()
 
-    assert stub_one.decisions[0]["event_id"] == stub_two.decisions[0]["event_id"]
+    with caplog.at_level(logging.INFO, logger="sentri.api.evaluate"):
+        await evaluate(_event(test_case), InMemoryBMONIStub(), _StubSynthesizer())
+        second_event_id = [r for r in caplog.records if r.message == "evaluate_complete"][
+            0
+        ].__dict__["event_id"]
 
-
-class _FailingLogDecisionStub(InMemoryBMONIStub):
-    """Stub whose log_decision always raises, to verify /evaluate stays insulated."""
-
-    async def log_decision(
-        self,
-        user_id: str,
-        event_id: str,
-        decision: str,
-        explanation: Optional[str],
-    ) -> None:
-        raise RuntimeError("bmoni down")
-
-
-async def test_evaluate_survives_log_decision_failure(
-    cohort_test_cases: dict[str, dict[str, Any]], caplog: pytest.LogCaptureFixture
-) -> None:
-    event = _event(cohort_test_cases["A"])
-    stub = _FailingLogDecisionStub()
-
-    with caplog.at_level(logging.WARNING, logger="sentri.api.evaluate"):
-        verdict = await evaluate(event, stub, _StubSynthesizer())
-
-    assert verdict.kind == VerdictKind.INTERVENE
-    assert verdict.explanation
-
-    warnings = [r for r in caplog.records if r.getMessage() == "log_decision failed"]
-    assert len(warnings) == 1
-    assert warnings[0].__dict__["user_id"] == event.user_id
+    assert first_event_id == second_event_id
 
 
 async def test_evaluate_complete_failure_falls_back_to_silent_pass(
@@ -352,9 +343,11 @@ async def test_evaluate_logs_start_and_complete(
     complete_records = [r for r in caplog.records if r.message == "evaluate_complete"]
     assert len(complete_records) == 1
     assert "user_id" in complete_records[0].__dict__
+    assert "event_id" in complete_records[0].__dict__
     assert "verdict_kind" in complete_records[0].__dict__
     assert "triggered_reasons" in complete_records[0].__dict__
     assert "synthesizer_used" in complete_records[0].__dict__
+    assert "explanation" in complete_records[0].__dict__
     assert "latency_ms" in complete_records[0].__dict__
 
 

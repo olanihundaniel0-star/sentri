@@ -39,13 +39,3 @@ async def test_get_social_graph_returns_populated_graph_for_others(
     assert len(graph.friends_of_friends) > 0
     for friend_id in graph.friends:
         assert friend_id in graph.friends_of_friends
-
-
-async def test_log_decision_records_the_decision(stub: InMemoryBMONIStub) -> None:
-    await stub.log_decision("user_001", "evt-1", "silent_pass", None)
-    assert {
-        "user_id": "user_001",
-        "event_id": "evt-1",
-        "decision": "silent_pass",
-        "explanation": None,
-    } in stub.decisions

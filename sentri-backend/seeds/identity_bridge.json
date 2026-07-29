@@ -1,0 +1,14 @@
+{
+  "user_001": {
+    "bmoni_user_id": "REPLACE_WITH_REAL_BMONI_USER_ID",
+    "phone": "REPLACE_WITH_PHONE_USED_AT_SIGNUP",
+    "cohort": "A",
+    "note": "Live intervene demo. Cohort A is the already-validated live intervene test case (tests/test_e2e.py cohort_test_cases['A'], test_cohort_a_is_intervene_with_explanation)."
+  },
+  "user_002": {
+    "bmoni_user_id": "REPLACE_WITH_REAL_BMONI_USER_ID",
+    "phone": "REPLACE_WITH_PHONE_USED_AT_SIGNUP",
+    "cohort": "D",
+    "note": "Live silent-pass demo. Cohort D is an ordinary, non-anomalous transaction for this persona (test_cohort_d_is_silent_pass)."
+  }
+}

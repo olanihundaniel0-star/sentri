@@ -44,7 +44,6 @@ class InMemoryBMONIStub:
                 _parse_transaction(txn) for txn in user["transactions"]
             ]
 
-        self.decisions: list[dict[str, Optional[str]]] = []
         self._transfer_intent_callback: Optional[Any] = None
 
     async def get_transaction_history(self, user_id: str) -> list[Transaction]:
@@ -62,22 +61,6 @@ class InMemoryBMONIStub:
             user_id=user_id,
             friends=frozenset(friends),
             friends_of_friends=friends_of_friends,
-        )
-
-    async def log_decision(
-        self,
-        user_id: str,
-        event_id: str,
-        decision: str,
-        explanation: Optional[str],
-    ) -> None:
-        self.decisions.append(
-            {
-                "user_id": user_id,
-                "event_id": event_id,
-                "decision": decision,
-                "explanation": explanation,
-            }
         )
 
     async def on_transfer_intent_hook(self, callback: Any) -> None:

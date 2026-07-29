@@ -1,4 +1,5 @@
 # Sentri
+<<<<<<< HEAD
 
 **Sentri is an AI security coprocessor for financial transactions.**
 
@@ -545,3 +546,5 @@ packages are fully decoupled from BMONI and depend only on the canonical
 | Tests | pytest 8.3, pytest-asyncio 0.25 |
 | Linting | Ruff 0.11 |
 | Type checking | mypy 1.15 (strict) |
+=======
+>>>>>>> 445d2c85a5863cbebbd250da88cacf79eef6a78b
