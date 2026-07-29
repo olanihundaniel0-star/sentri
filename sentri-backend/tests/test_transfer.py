@@ -255,6 +255,7 @@ async def test_expired_pending_transfers_are_pruned_on_the_next_write(
 
     with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
         held = await create_transfer(request, _FakeRealClient(), TemplateOnlySynthesizer())  # type: ignore[arg-type]
+    assert held.transfer_id is not None
 
     stale = transfer_module._pending_transfers[held.transfer_id]
     transfer_module._pending_transfers[held.transfer_id] = transfer_module._PendingTransfer(
