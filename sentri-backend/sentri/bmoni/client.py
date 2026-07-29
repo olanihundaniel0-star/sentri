@@ -180,9 +180,7 @@ class BMONIClient:
             raise BMONITransferError(f"withdrawal proposal request failed: {exc}") from exc
 
         proposal = proposal_response.json()
-        logger.debug(
-            "BMONI raw withdrawal-proposal response for user_id=%s: %r", user_id, proposal
-        )
+        logger.debug("BMONI raw withdrawal-proposal response for user_id=%s: %r", user_id, proposal)
 
         try:
             proposal_id = proposal["proposalId"]

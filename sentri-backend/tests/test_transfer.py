@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,6 +13,7 @@ import sentri.api.transfer as transfer_module
 from sentri.api.deps import TemplateOnlySynthesizer
 from sentri.api.transfer import confirm_transfer, create_transfer
 from sentri.bmoni.stub import InMemoryBMONIStub
+from sentri.canonical.timestamps import ingest_timestamp
 from sentri.models.transfer import TransferRequest, TransferStatus
 from seeds.generator import generate_seed_data, write_seed_data
 
@@ -77,6 +79,19 @@ def _bridged(real_user_id: str = "bmoni-real-001") -> Any:
     )
 
 
+@contextmanager
+def _frozen_at_cohort_time(test_case: dict[str, Any]) -> Iterator[None]:
+    """create_transfer scores against datetime.now(), but cohort test cases are
+    anchored to seeds/generator.py's fixed _REFERENCE_DATE -- freeze "now" to
+    the cohort's own designed timestamp so its intended silent-pass/intervene
+    outcome doesn't depend on the wall-clock time the test happens to run at.
+    """
+    frozen = ingest_timestamp(test_case["event"]["timestamp"])
+    with patch.object(transfer_module, "datetime") as mock_datetime:
+        mock_datetime.now.return_value = frozen
+        yield
+
+
 async def test_create_transfer_rejects_unbridged_user(
     cohort_test_cases: dict[str, dict[str, Any]],
 ) -> None:
@@ -95,7 +110,7 @@ async def test_create_transfer_holds_when_intervene_fires(
     request = _transfer_request(cohort_test_cases["A"])
     fake_client = _FakeRealClient()
 
-    with _bridged():
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
         response = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
 
     assert response.status == TransferStatus.HELD
@@ -112,7 +127,11 @@ async def test_create_transfer_executes_immediately_on_silent_pass(
     request = _transfer_request(cohort_test_cases["D"])
     fake_client = _FakeRealClient()
 
-    with _bridged(), patch.object(transfer_module, "RealBMONIClient", _FakeRealClient):
+    with (
+        _bridged(),
+        _frozen_at_cohort_time(cohort_test_cases["D"]),
+        patch.object(transfer_module, "RealBMONIClient", _FakeRealClient),
+    ):
         response = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
 
     assert response.status == TransferStatus.EXECUTED
@@ -127,7 +146,7 @@ async def test_create_transfer_503s_when_bmoni_client_is_not_real(
 ) -> None:
     request = _transfer_request(cohort_test_cases["D"])
 
-    with _bridged():
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["D"]):
         with pytest.raises(HTTPException) as exc_info:
             await create_transfer(request, InMemoryBMONIStub(), TemplateOnlySynthesizer())
 
@@ -140,7 +159,7 @@ async def test_confirm_transfer_executes_pending_and_removes_it(
     request = _transfer_request(cohort_test_cases["A"])
     fake_client = _FakeRealClient()
 
-    with _bridged():
+    with _bridged(), _frozen_at_cohort_time(cohort_test_cases["A"]):
         held = await create_transfer(request, fake_client, TemplateOnlySynthesizer())  # type: ignore[arg-type]
     assert held.transfer_id is not None
 

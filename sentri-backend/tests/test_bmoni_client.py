@@ -161,9 +161,7 @@ async def test_on_transfer_intent_hook_is_a_noop() -> None:
 @respx.mock
 async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
     signer = Account.create()
-    proposal_route = respx.post(
-        f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria"
-    ).mock(
+    proposal_route = respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
         return_value=httpx.Response(
             200, json={"proposalId": "prop-1", "signPayload": _EIP712_SIGN_PAYLOAD}
         )
@@ -184,7 +182,7 @@ async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
     assert proposal_route.called
     assert sign_route.called
     sent_signature = json.loads(sign_route.calls[0].request.content)["signature"]
-    assert sent_signature.startswith("0x")
+    assert len(sent_signature.removeprefix("0x")) == 130  # 65-byte ECDSA signature, hex-encoded
 
 
 @respx.mock
