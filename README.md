@@ -1,5 +1,5 @@
 # Sentri
-<<<<<<< HEAD
+
 
 **Sentri is an AI security coprocessor for financial transactions.**
 
