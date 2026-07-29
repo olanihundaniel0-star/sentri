@@ -6,6 +6,7 @@ anomalous transaction. No network/LLM calls anywhere in this file.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from sentri import __version__, config
@@ -30,7 +31,7 @@ def test_config_defaults() -> None:
     assert "recipient_familiarity_below" in config.THRESHOLDS
 
 
-def test_seed_data_fixture(seed_data: dict) -> None:
+def test_seed_data_fixture(seed_data: dict[str, Any]) -> None:
     assert isinstance(seed_data, dict)
 
 

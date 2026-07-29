@@ -253,7 +253,7 @@ async def test_evaluate_survives_log_decision_failure(
 
     warnings = [r for r in caplog.records if r.getMessage() == "log_decision failed"]
     assert len(warnings) == 1
-    assert warnings[0].user_id == event.user_id
+    assert warnings[0].__dict__["user_id"] == event.user_id
 
 
 async def test_evaluate_complete_failure_falls_back_to_silent_pass(
@@ -313,8 +313,8 @@ async def test_evaluate_falls_back_to_silent_pass_when_history_lookup_fails(
 
     failures = [r for r in caplog.records if r.getMessage() == "evaluate_failed"]
     assert len(failures) == 1
-    assert failures[0].user_id == event.user_id
-    assert failures[0].recipient_id == event.recipient_id
+    assert failures[0].__dict__["user_id"] == event.user_id
+    assert failures[0].__dict__["recipient_id"] == event.recipient_id
 
 
 async def test_evaluate_falls_back_to_silent_pass_when_synthesizer_fails(
@@ -330,8 +330,8 @@ async def test_evaluate_falls_back_to_silent_pass_when_synthesizer_fails(
 
     failures = [r for r in caplog.records if r.getMessage() == "evaluate_failed"]
     assert len(failures) == 1
-    assert failures[0].user_id == event.user_id
-    assert failures[0].recipient_id == event.recipient_id
+    assert failures[0].__dict__["user_id"] == event.user_id
+    assert failures[0].__dict__["recipient_id"] == event.recipient_id
 
 
 async def test_evaluate_logs_start_and_complete(
@@ -384,8 +384,8 @@ async def test_evaluate_silent_pass_on_empty_history(caplog: pytest.LogCaptureFi
 
     no_history_records = [r for r in caplog.records if r.message == "evaluate_no_history"]
     assert len(no_history_records) == 1
-    assert no_history_records[0].user_id == "new_user"
-    assert no_history_records[0].recipient_id == "anyone"
+    assert no_history_records[0].__dict__["user_id"] == "new_user"
+    assert no_history_records[0].__dict__["recipient_id"] == "anyone"
 
 
 async def test_stub_loads_seed_data_regardless_of_cwd(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -19,4 +19,5 @@ def seed_data() -> dict[str, Any]:
     raw = _SEEDS_PATH.read_text(encoding="utf-8").strip()
     if not raw:
         return {}
-    return json.loads(raw)
+    result: dict[str, Any] = json.loads(raw)
+    return result
