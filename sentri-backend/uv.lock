@@ -603,6 +603,17 @@ dev = [
     { name = "ruff" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "iniconfig" },
+    { name = "mypy" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = "==0.49.0" },
@@ -618,6 +629,17 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = "==0.34.0" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "iniconfig", specifier = ">=2.3.0" },
+    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "packaging", specifier = ">=26.2" },
+    { name = "pluggy", specifier = ">=1.6.0" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
+    { name = "ruff", specifier = ">=0.11.2" },
+]
 
 [[package]]
 name = "sniffio"
