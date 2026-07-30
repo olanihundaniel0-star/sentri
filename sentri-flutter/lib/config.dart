@@ -17,7 +17,14 @@ class UserMeta {
 }
 
 class Config {
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  /// Backend base URL. Override at build/run time so a physical device can
+  /// reach the backend over the LAN instead of the Android-emulator-only
+  /// `10.0.2.2` alias, e.g.:
+  ///   flutter run --dart-define=API_BASE_URL=http://192.168.1.23:8000
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:8000',
+  );
 
   static const List<String> demoUsers = ['user_001', 'user_002'];
 
