@@ -24,7 +24,24 @@ _WAT = ZoneInfo("Africa/Lagos")
 # "Today" for the purposes of seed generation. Transactions span the 6 months
 # before this date; cohort/test-case transactions land on this date itself so
 # they are always the most recent thing in a persona's history.
-_REFERENCE_DATE = datetime(2026, 7, 26, tzinfo=_WAT)
+#
+# All scorer unit tests freeze wall-clock time to a cohort's own designed
+# timestamp (see test_scorer.py / test_transfer.py), so they're unaffected by
+# this constant's absolute value -- only relative day_offsets matter to them.
+# But live /transfer calls score against real datetime.now(timezone.utc) with
+# no override (sentri/api/transfer.py), and sentri/scorer/amount.py's
+# AMOUNT_DRIFT compares volatility in the *real* last 0-30 days against the
+# real prior 31-90 days. Since every persona's cohort test-case transaction
+# is injected at day_offset=0 (i.e. exactly at this date), once real
+# wall-clock time is within ~30 days of this constant, that deliberately
+# anomalous cohort transaction sits inside the live "recent" window and
+# inflates volatility enough to fire AMOUNT_DRIFT on *any* live transfer for
+# that persona, regardless of the transfer's own amount or recipient (found
+# live 2026-07-30, see PROOF_OF_WORK.md). Kept 90+ days behind the date this
+# was last bumped so it stays outside both drift windows (drift resolves to
+# None, i.e. never fires) for real transfers for months going forward --
+# re-bump if it starts drifting back inside 30 days of real "now".
+_REFERENCE_DATE = datetime(2026, 4, 1, tzinfo=_WAT)
 _HISTORY_WINDOW_DAYS = 181
 
 # Mix of Yoruba/Igbo/Hausa names. Personas are professional freelancers /
