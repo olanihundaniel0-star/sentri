@@ -27,9 +27,12 @@ class Transaction {
   String get displayAmount {
     final naira = amountKobo ~/ 100;
     final kobo = amountKobo % 100;
-    final formatted = naira.toString().replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-    return kobo == 0 ? '₦$formatted' : '₦$formatted.${kobo.toString().padLeft(2, '0')}';
+    final formatted = naira
+        .toString()
+        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    return kobo == 0
+        ? '₦$formatted'
+        : '₦$formatted.${kobo.toString().padLeft(2, '0')}';
   }
 }
 
@@ -97,7 +100,8 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     final recipientsMap = (json['recipients'] as Map<String, dynamic>).map(
-      (k, v) => MapEntry(k, RecipientRollup.fromJson(v as Map<String, dynamic>)),
+      (k, v) =>
+          MapEntry(k, RecipientRollup.fromJson(v as Map<String, dynamic>)),
     );
     return UserProfile(
       userId: json['user_id'] as String,
@@ -139,7 +143,8 @@ class EvaluateResult {
     return EvaluateResult(
       kind: json['kind'] as String,
       explanation: json['explanation'] as String?,
-      triggeredReasons: (json['triggered_reasons'] as List?)?.cast<String>() ?? [],
+      triggeredReasons:
+          (json['triggered_reasons'] as List?)?.cast<String>() ?? [],
       synthesizerUsed: json['synthesizer_used'] as String? ?? 'none',
     );
   }
@@ -153,4 +158,73 @@ class EvaluateResult {
       triggeredReasons.where((r) => _structural.contains(r)).toList();
   List<String> get nonStructuralReasons =>
       triggeredReasons.where((r) => !_structural.contains(r)).toList();
+}
+
+class TransferRequest {
+  final String userId;
+  final int amountKobo;
+  final String recipientId;
+  final String currency;
+  final String destinationType;
+  final Map<String, dynamic> destination;
+  final String? memo;
+  final bool crossBorder;
+  final String language;
+
+  const TransferRequest({
+    required this.userId,
+    required this.amountKobo,
+    required this.recipientId,
+    required this.destination,
+    this.currency = 'NGN',
+    this.destinationType = 'nigeria',
+    this.memo,
+    this.crossBorder = false,
+    this.language = 'en',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'amount_kobo': amountKobo,
+        'recipient_id': recipientId,
+        'currency': currency,
+        'destination_type': destinationType,
+        'destination': destination,
+        'memo': memo,
+        'cross_border': crossBorder,
+        'language': language,
+      };
+}
+
+class TransferResponse {
+  final String status;
+  final String? transferId;
+  final String? kind;
+  final String? explanation;
+  final List<String> triggeredReasons;
+  final Map<String, dynamic>? bmoniResult;
+
+  const TransferResponse({
+    required this.status,
+    this.transferId,
+    this.kind,
+    this.explanation,
+    this.triggeredReasons = const [],
+    this.bmoniResult,
+  });
+
+  factory TransferResponse.fromJson(Map<String, dynamic> json) {
+    return TransferResponse(
+      status: json['status'] as String,
+      transferId: json['transfer_id'] as String?,
+      kind: json['kind'] as String?,
+      explanation: json['explanation'] as String?,
+      triggeredReasons:
+          (json['triggered_reasons'] as List?)?.cast<String>() ?? [],
+      bmoniResult: json['bmoni_result'] as Map<String, dynamic>?,
+    );
+  }
+
+  bool get isHeld => status == 'held';
+  bool get isExecuted => status == 'executed';
 }

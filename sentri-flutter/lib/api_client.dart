@@ -56,8 +56,38 @@ class ApiClient {
     );
 
     if (res.statusCode == 200) {
-      return EvaluateResult.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+      return EvaluateResult.fromJson(
+          jsonDecode(res.body) as Map<String, dynamic>);
     }
     throw Exception('Evaluate failed: ${res.statusCode} ${res.body}');
+  }
+
+  /// POST /transfer — backend-gated transfer path.
+  Future<TransferResponse> createTransfer(TransferRequest request) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/transfer'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (res.statusCode == 200) {
+      return TransferResponse.fromJson(
+          jsonDecode(res.body) as Map<String, dynamic>);
+    }
+    throw Exception('Transfer failed: ${res.statusCode} ${res.body}');
+  }
+
+  /// POST /transfer/{id}/confirm.
+  Future<TransferResponse> confirmTransfer(String transferId) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/transfer/$transferId/confirm'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (res.statusCode == 200) {
+      return TransferResponse.fromJson(
+          jsonDecode(res.body) as Map<String, dynamic>);
+    }
+    throw Exception('Confirm failed: ${res.statusCode} ${res.body}');
   }
 }

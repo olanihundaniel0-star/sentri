@@ -17,7 +17,7 @@ class UserMeta {
 }
 
 class Config {
-  static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = 'http://10.0.2.2:8000';
 
   static const List<String> demoUsers = ['user_001', 'user_002'];
 
