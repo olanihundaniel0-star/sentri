@@ -1,0 +1,48 @@
+# ── Personal / local setup docs ──────────────────────────────────────────────
+SETUP_FLUTTER.md
+TEST_BACKEND_FLOW.md
+setup_flutter.ps1
+
+# ── Stray pip artefacts ───────────────────────────────────────────────────────
+sentri-backend/0.13.7
+
+# ── Generated seed data (run `python -m seeds.generator` to recreate) ─────────
+sentri-backend/seeds/data.json
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+.bmoni_keys/
+
+# ── Test / lint caches ────────────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Flutter / Dart ────────────────────────────────────────────────────────────
+sentri-flutter/.dart_tool/
+sentri-flutter/.flutter-plugins
+sentri-flutter/.flutter-plugins-dependencies
+sentri-flutter/build/
+sentri-flutter/.pub-cache/
+sentri-flutter/.pub/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
