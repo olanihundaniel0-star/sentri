@@ -235,6 +235,9 @@ async def test_confirm_transfer_returns_clean_502_on_bmoni_transfer_error(
             await confirm_transfer(held.transfer_id, _FailingRealClient())  # type: ignore[arg-type]
 
     assert exc_info.value.status_code == 502
+    # A failed confirm means BMONI never confirmed anything moved, so the
+    # transfer_id must stay retryable, not be silently lost.
+    assert held.transfer_id in transfer_module._pending_transfers
 
 
 async def test_confirm_transfer_404s_for_expired_pending_transfer(

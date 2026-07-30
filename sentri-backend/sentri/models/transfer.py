@@ -8,6 +8,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 from sentri.models.deviation import TriggerReason
+from sentri.models.verdict import VerdictKind
 
 
 class TransferRequest(BaseModel):
@@ -40,6 +41,7 @@ class TransferResponse(BaseModel):
 
     status: TransferStatus
     transfer_id: Optional[str] = None
+    kind: Optional[VerdictKind] = None
     explanation: Optional[str] = None
     triggered_reasons: list[TriggerReason] = Field(default_factory=list)
     bmoni_result: Optional[dict[str, Any]] = None

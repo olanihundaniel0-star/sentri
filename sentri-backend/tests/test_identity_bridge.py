@@ -32,11 +32,15 @@ class _FakeRealClient:
         raise AssertionError("on_transfer_intent_hook should not be called by the identity bridge")
 
 
-def test_shipped_bridge_placeholders_resolve_to_none() -> None:
+def test_shipped_bridge_is_filled_in_for_both_demo_identities() -> None:
     """seeds/identity_bridge.json ships with REPLACE_ placeholders until the
-    onboarding script has actually been run for each identity."""
-    assert real_bmoni_user_id("user_001") is None
-    assert real_bmoni_user_id("user_002") is None
+    onboarding script has actually been run for each identity; both were
+    onboarded live 2026-07-29 (see identity_bridge.json's own notes), so both
+    now resolve to real (non-placeholder) bmoni_user_id values."""
+    for seed_user_id in ("user_001", "user_002"):
+        resolved = real_bmoni_user_id(seed_user_id)
+        assert resolved is not None
+        assert not resolved.startswith("REPLACE_")
 
 
 def test_unbridged_user_resolves_to_none() -> None:

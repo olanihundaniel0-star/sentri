@@ -15,24 +15,44 @@ from sentri.bmoni.client import BMONIClient, BMONITransferError
 _BASE_URL = "https://embedded-dev.bmoni.com"
 
 _EIP712_SIGN_PAYLOAD = {
-    "types": {
-        "EIP712Domain": [
-            {"name": "name", "type": "string"},
-            {"name": "version", "type": "string"},
-            {"name": "chainId", "type": "uint256"},
-        ],
-        "Withdrawal": [
-            {"name": "amount", "type": "uint256"},
-        ],
+    "signingPayloadHash": "0x" + "ab" * 32,
+    "typedData": {
+        "types": {
+            "EIP712Domain": [
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+            ],
+            "Withdrawal": [
+                {"name": "amount", "type": "uint256"},
+            ],
+        },
+        "domain": {"name": "BMONI", "version": "1", "chainId": 1},
+        "primaryType": "Withdrawal",
+        "message": {"amount": 1000},
     },
-    "domain": {"name": "BMONI", "version": "1", "chainId": 1},
-    "primaryType": "Withdrawal",
-    "message": {"amount": 1000},
+    "signatureExpiresAt": "2026-07-31T01:20:30.101Z",
+    "proposalStatus": "PENDING_SIGNATURES",
 }
 
 
 def _make_client() -> BMONIClient:
     return BMONIClient(api_key="test-key", base_url=_BASE_URL)
+
+
+def _mock_balances(wallet_ids: list[str]) -> None:
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/balances").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "smartAccountAddress": "0xabc",
+                "balances": [
+                    {"smartWalletId": wallet_id, "currency": "NGN", "balance": "0", "error": None}
+                    for wallet_id in wallet_ids
+                ],
+            },
+        )
+    )
 
 
 def test_missing_api_key_raises() -> None:
@@ -42,7 +62,8 @@ def test_missing_api_key_raises() -> None:
 
 @respx.mock
 async def test_get_transaction_history_happy_path_maps_to_canonical_transaction() -> None:
-    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+    _mock_balances(["wallet-1"])
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-1/transactions").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -70,8 +91,49 @@ async def test_get_transaction_history_happy_path_maps_to_canonical_transaction(
 
 
 @respx.mock
+async def test_get_transaction_history_fans_out_over_every_wallet() -> None:
+    """A user with multiple currency wallets (e.g. NGN and USDB) gets
+    transactions from all of them concatenated."""
+    _mock_balances(["wallet-ngn", "wallet-usdb"])
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-ngn/transactions").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "transactions": [
+                    {
+                        "amount": "1000.00",
+                        "timestamp": "2026-01-15T12:00:00+00:00",
+                        "recipientId": "user_002",
+                    }
+                ]
+            },
+        )
+    )
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-usdb/transactions").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "transactions": [
+                    {
+                        "amount": "10.00",
+                        "timestamp": "2026-01-16T12:00:00+00:00",
+                        "recipientId": "user_003",
+                    }
+                ]
+            },
+        )
+    )
+
+    client = _make_client()
+    history = await client.get_transaction_history("user_001")
+
+    assert {tx.recipient_id for tx in history} == {"user_002", "user_003"}
+
+
+@respx.mock
 async def test_get_transaction_history_skips_unparseable_records() -> None:
-    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+    _mock_balances(["wallet-1"])
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-1/transactions").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -95,10 +157,22 @@ async def test_get_transaction_history_skips_unparseable_records() -> None:
 
 
 @respx.mock
-async def test_get_transaction_history_timeout_falls_back_to_empty_and_warns(
+async def test_get_transaction_history_no_wallets_returns_empty(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+    _mock_balances([])
+
+    client = _make_client()
+    history = await client.get_transaction_history("user_001")
+
+    assert history == []
+
+
+@respx.mock
+async def test_get_transaction_history_balances_timeout_falls_back_to_empty_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/balances").mock(
         side_effect=httpx.TimeoutException("timed out")
     )
 
@@ -114,7 +188,8 @@ async def test_get_transaction_history_timeout_falls_back_to_empty_and_warns(
 async def test_get_transaction_history_non_2xx_falls_back_to_empty_and_warns(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+    _mock_balances(["wallet-1"])
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-1/transactions").mock(
         return_value=httpx.Response(500, json={"error": "boom"})
     )
 
@@ -133,7 +208,8 @@ async def test_get_transaction_history_malformed_response_falls_back_to_empty_an
     """A 200 response whose body is neither a dict nor a list (e.g. a bare
     JSON number) must degrade the same way a failed HTTP call already does,
     not raise an uncaught TypeError out of the method."""
-    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/account/transactions").mock(
+    _mock_balances(["wallet-1"])
+    respx.get(f"{_BASE_URL}/v1/users/user_001/smart-wallets/wallet-1/transactions").mock(
         return_value=httpx.Response(200, json=42)
     )
 
@@ -190,13 +266,14 @@ async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
         user_id="user_001",
         signer=signer,
         amount_kobo=100_000,
-        destination={"accountNumber": "0001112222", "bankCode": "044"},
+        destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
     )
 
     assert result == {"status": "submitted"}
     assert proposal_route.called
     assert sign_route.called
     sent_signature = json.loads(sign_route.calls[0].request.content)["signature"]
+    assert sent_signature.startswith("0x")
     assert len(sent_signature.removeprefix("0x")) == 130  # 65-byte ECDSA signature, hex-encoded
 
 
@@ -204,8 +281,8 @@ async def test_transfer_happy_path_proposes_signs_and_submits() -> None:
 async def test_transfer_amount_kobo_always_wins_over_a_destination_amount_key() -> None:
     """destination is caller-supplied; it must never be able to change what
     amount BMONI actually moves once amount_kobo has been scored. Build a
-    destination carrying its own conflicting "amount" and assert the request
-    body still reflects amount_kobo, not destination's value."""
+    destination carrying its own conflicting "fromAmount" and assert the
+    request body still reflects amount_kobo, not destination's value."""
     proposal_route = respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
         return_value=httpx.Response(
             200, json={"proposalId": "prop-1", "signPayload": _EIP712_SIGN_PAYLOAD}
@@ -221,15 +298,15 @@ async def test_transfer_amount_kobo_always_wins_over_a_destination_amount_key() 
         signer=Account.create(),
         amount_kobo=100_000,
         destination={
-            "accountNumber": "0001112222",
-            "bankCode": "044",
-            "amount": 500_000_000,
+            "sourceSmartWalletId": "wallet-1",
+            "bankAccountId": "bank-acct-1",
+            "fromAmount": "5000000.00",
         },
     )
 
     sent_body = json.loads(proposal_route.calls[0].request.content)
-    assert sent_body["amount"] == 1000.0
-    assert sent_body["accountNumber"] == "0001112222"
+    assert sent_body["fromAmount"] == "1000.00"
+    assert sent_body["bankAccountId"] == "bank-acct-1"
 
 
 @respx.mock
@@ -251,11 +328,45 @@ async def test_transfer_uses_crypto_endpoint_for_crypto_destination() -> None:
         user_id="user_001",
         signer=signer,
         amount_kobo=100_000,
-        destination={"address": "0xabc"},
+        destination={
+            "sourceSmartWalletId": "wallet-1",
+            "destinationChain": "Base",
+            "destinationCurrency": "USDC",
+            "destinationAddress": "0xabc",
+        },
         destination_type="crypto",
     )
 
     assert proposal_route.called
+    sent_body = json.loads(proposal_route.calls[0].request.content)
+    assert sent_body["amount"] == "1000.00"
+    assert sent_body["destinationAddress"] == "0xabc"
+
+
+@respx.mock
+async def test_transfer_raises_when_sign_payload_pending() -> None:
+    """signPayloadPending means the upstream hasn't prepared the EIP-712
+    payload synchronously; no polling endpoint is implemented yet, so this
+    must fail loudly rather than silently returning something unsigned."""
+    respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposalId": "prop-1",
+                "signPayloadPending": True,
+                "signPayloadHint": "poll GET .../sign-payload",
+            },
+        )
+    )
+
+    client = _make_client()
+    with pytest.raises(BMONITransferError):
+        await client.transfer(
+            user_id="user_001",
+            signer=Account.create(),
+            amount_kobo=100_000,
+            destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
+        )
 
 
 @respx.mock
@@ -270,7 +381,7 @@ async def test_transfer_raises_on_proposal_request_failure() -> None:
             user_id="user_001",
             signer=Account.create(),
             amount_kobo=100_000,
-            destination={"accountNumber": "0001112222", "bankCode": "044"},
+            destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
         )
 
 
@@ -286,7 +397,40 @@ async def test_transfer_raises_when_proposal_response_missing_fields() -> None:
             user_id="user_001",
             signer=Account.create(),
             amount_kobo=100_000,
-            destination={"accountNumber": "0001112222", "bankCode": "044"},
+            destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
+        )
+
+
+@respx.mock
+async def test_transfer_raises_when_sign_payload_missing_signing_hash() -> None:
+    """signPayload is a wrapper -- {signingPayloadHash, typedData,
+    signatureExpiresAt, proposalStatus} -- confirmed live against the
+    sandbox 2026-07-30. The sandbox signs/verifies signingPayloadHash
+    directly (a raw ecrecover), not typedData (see module docstring for the
+    live 400 this produced before that was discovered); a malformed/
+    incomplete wrapper missing signingPayloadHash must still fail loudly
+    with BMONITransferError, not a bare KeyError."""
+    respx.post(f"{_BASE_URL}/v1/users/user_001/withdrawal/wallet/nigeria").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "proposalId": "prop-1",
+                "signPayload": {
+                    "typedData": _EIP712_SIGN_PAYLOAD["typedData"],
+                    "signatureExpiresAt": "2026-07-31T01:20:30.101Z",
+                    "proposalStatus": "PENDING_SIGNATURES",
+                },
+            },
+        )
+    )
+
+    client = _make_client()
+    with pytest.raises(BMONITransferError):
+        await client.transfer(
+            user_id="user_001",
+            signer=Account.create(),
+            amount_kobo=100_000,
+            destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
         )
 
 
@@ -307,5 +451,5 @@ async def test_transfer_raises_on_sign_submission_failure() -> None:
             user_id="user_001",
             signer=Account.create(),
             amount_kobo=100_000,
-            destination={"accountNumber": "0001112222", "bankCode": "044"},
+            destination={"sourceSmartWalletId": "wallet-1", "bankAccountId": "bank-acct-1"},
         )
