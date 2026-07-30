@@ -1,14 +1,14 @@
 {
   "user_001": {
-    "bmoni_user_id": "REPLACE_WITH_REAL_BMONI_USER_ID",
-    "phone": "REPLACE_WITH_PHONE_USED_AT_SIGNUP",
+    "bmoni_user_id": "5d0fd0c3-ad1a-4739-909c-6b27803bfcb4",
+    "phone": "+2348001000001",
     "cohort": "A",
-    "note": "Live intervene demo. Cohort A is the already-validated live intervene test case (tests/test_e2e.py cohort_test_cases['A'], test_cohort_a_is_intervene_with_explanation)."
+    "note": "Live intervene demo. Cohort A is the already-validated live intervene test case (tests/test_e2e.py cohort_test_cases['A'], test_cohort_a_is_intervene_with_explanation). Onboarded 2026-07-29 as sandbox identity 'Ada'; NGN smart wallet id fd627349-2343-4489-ae9b-988d12efee32, withdrawal bank account id 9a6d486a-5593-45a8-ae00-2f158a594560. Signing key held server-side as BMONI_SIGNING_KEY__user_001 (see sentri/bmoni/signing.py); never committed."
   },
   "user_002": {
-    "bmoni_user_id": "REPLACE_WITH_REAL_BMONI_USER_ID",
-    "phone": "REPLACE_WITH_PHONE_USED_AT_SIGNUP",
+    "bmoni_user_id": "dfda86aa-ae19-49c8-a6c7-0edc743f1cd4",
+    "phone": "+2348001000002",
     "cohort": "D",
-    "note": "Live silent-pass demo. Cohort D is an ordinary, non-anomalous transaction for this persona (test_cohort_d_is_silent_pass)."
+    "note": "Live silent-pass demo. Cohort D is an ordinary, non-anomalous transaction for this persona (test_cohort_d_is_silent_pass). Onboarded 2026-07-29 as sandbox identity 'Bola'; NGN smart wallet id d177e7a6-f9a9-4ffe-b215-3bb854852e69, withdrawal bank account id 3ae60b09-b5e6-42ae-b10e-e6bc469338a5. Signing key held server-side as BMONI_SIGNING_KEY__user_002 (see sentri/bmoni/signing.py); never committed."
   }
 }

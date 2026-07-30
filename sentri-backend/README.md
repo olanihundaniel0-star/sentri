@@ -1,5 +1,6 @@
 # Sentri
 
+
 ## What is Sentri
 
 Sentri is an AI security coprocessor backend. It evaluates financial transactions against a user's behavioral profile, computes deterministic deviation signals, and synthesizes human-readable explanations — acting as a second opinion layer before money moves.

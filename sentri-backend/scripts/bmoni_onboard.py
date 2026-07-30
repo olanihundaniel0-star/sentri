@@ -5,12 +5,15 @@ Run manually, once per demo identity:
     uv run python scripts/bmoni_onboard.py \\
         --name "Ada" --email ada@example.com --phone "+2348000000001"
 
-Walks one identity through the mandatory sandbox sequence documented in the
-BMONI Hackathon Quick Start: create user -> create managed smart wallet ->
-check KYC -> activate the NGN rail -> poll onboarding status until active.
-Then stops: test funds (CNGN 1,000 / USDB $10 per wallet) are credited
-manually by BMONI staff in the room, keyed off the phone number used at
-signup -- there is no funding endpoint in the sandbox API.
+Walks one identity through the mandatory sandbox sequence: create user ->
+create managed smart wallet -> check KYC -> activate the NGN rail -> confirm
+the wallet is actually readable. Field names throughout were corrected
+2026-07-29/30 against the sandbox's own live OpenAPI spec (GET
+/docs/openapi.json) after the original hackathon-doc guesses turned out
+wrong in several places -- see git history on this file. Then stops: test
+funds (CNGN 1,000 / USDB $10 per wallet) are credited manually by BMONI
+staff, keyed off the phone number used at signup -- there is no funding
+endpoint in the sandbox API.
 
 The wallet's owner keypair is generated locally and never sent anywhere
 except as a signature. Its private key is written to a local, gitignored
@@ -36,7 +39,6 @@ from eth_account.signers.local import LocalAccount
 from sentri.config import Config
 
 _TEST_BVN = "22222222222"
-_COUNTRY_CODE = "NGA"
 _WALLET_CURRENCY = "CNGN"
 _POLL_INTERVAL_SECONDS = 3.0
 _POLL_MAX_ATTEMPTS = 20
@@ -61,7 +63,7 @@ def create_user(client: httpx.Client, first_name: str, email: str, phone: str) -
     )
     response.raise_for_status()
     body: dict[str, Any] = response.json()
-    return str(body["bmoniUserId"])
+    return str(body["user"]["bmoniUserId"])
 
 
 def create_wallet(client: httpx.Client, user_id: str) -> tuple[dict[str, Any], LocalAccount]:
@@ -79,9 +81,13 @@ def create_wallet(client: httpx.Client, user_id: str) -> tuple[dict[str, Any], L
     (Prompt 13) -- the smart wallet's owner address is fixed at creation
     time, so this exact keypair is the only one that can ever sign for it.
 
-    TODO(bmoni-schema): challenge/response field names (message, challengeId,
-    address, index) are best guesses pending a confirmed schema; expect to
-    adjust them the first time this hits a live sandbox.
+    Confirmed live 2026-07-29 against GET /docs/openapi.json: create-managed
+    wants {currency, ownerProofChallengeId, ownerProofSignature,
+    userOwnerAddress} (not challengeId/signature), and the signature must be
+    a 65-byte 0x-prefixed hex string -- eth_account's HexBytes.hex() in the
+    pinned dependency versions omits the "0x" prefix, so it's prepended here
+    explicitly (the sandbox 400s otherwise). The wallet address comes back
+    as "walletAddress", not "address".
     """
     account: LocalAccount = Account.create()
 
@@ -98,8 +104,9 @@ def create_wallet(client: httpx.Client, user_id: str) -> tuple[dict[str, Any], L
     create_response = client.post(
         f"/v1/users/{user_id}/smart-wallets/create-managed",
         json={
-            "challengeId": challenge["challengeId"],
-            "signature": signed.signature.hex(),
+            "currency": _WALLET_CURRENCY,
+            "ownerProofChallengeId": challenge["challengeId"],
+            "ownerProofSignature": "0x" + signed.signature.hex(),
             "userOwnerAddress": account.address,
         },
     )
@@ -117,17 +124,21 @@ def check_onboarding_status(client: httpx.Client, user_id: str) -> dict[str, Any
 
 def activate_nigeria_rail(
     client: httpx.Client, user_id: str, wallet_address: str, wallet_index: int
-) -> None:
+) -> dict[str, Any]:
+    """Start the Nigeria (NGN) rail. Confirmed live: the body key is
+    ngnWalletAddress/ngnWalletIndex, not walletAddress/walletIndex, and there
+    is no countryCode field."""
     response = client.post(
         f"/v1/users/{user_id}/onboarding/start-nigeria",
         json={
             "bvn": _TEST_BVN,
-            "countryCode": _COUNTRY_CODE,
-            "walletAddress": wallet_address,
-            "walletIndex": wallet_index,
+            "ngnWalletAddress": wallet_address,
+            "ngnWalletIndex": wallet_index,
         },
     )
     response.raise_for_status()
+    result: dict[str, Any] = response.json()
+    return result
 
 
 def write_key_file(user_id: str, address: str, private_key_hex: str, phone: str) -> Path:
@@ -156,14 +167,27 @@ def write_key_file(user_id: str, address: str, private_key_hex: str, phone: str)
     return path
 
 
-def poll_until_active(client: httpx.Client, user_id: str) -> dict[str, Any]:
+def wait_for_ngn_wallet_ready(client: httpx.Client, user_id: str) -> dict[str, Any]:
+    """Confirm the NGN rail is actually usable.
+
+    GET .../onboarding/status never reports Nigeria-rail readiness: its
+    anchorStatus/bridgeStatus/moneriumStatus/etc fields track the
+    international rails (confirmed live -- they stayed "not_started" through
+    a successful Nigeria-only onboarding). The real signal is whether GET
+    .../smart-wallets/account/balances succeeds; in practice this was true
+    immediately after start-nigeria returned, but this still polls briefly
+    in case that's not always synchronous.
+    """
+    last_error: dict[str, Any] = {}
     for attempt in range(1, _POLL_MAX_ATTEMPTS + 1):
-        status = check_onboarding_status(client, user_id)
-        if status.get("status") == "active":
-            return status
-        print(f"  onboarding status ({attempt}/{_POLL_MAX_ATTEMPTS}): {status}")
+        response = client.get(f"/v1/users/{user_id}/smart-wallets/account/balances")
+        if response.status_code == 200:
+            result: dict[str, Any] = response.json()
+            return result
+        last_error = {"status_code": response.status_code, "body": response.text}
+        print(f"  balances not ready yet ({attempt}/{_POLL_MAX_ATTEMPTS}): {last_error}")
         time.sleep(_POLL_INTERVAL_SECONDS)
-    raise RuntimeError(f"onboarding did not reach 'active' after {_POLL_MAX_ATTEMPTS} polls")
+    raise RuntimeError(f"NGN wallet balances never became readable: {last_error}")
 
 
 def main() -> None:
@@ -192,11 +216,12 @@ def main() -> None:
         print(f"  status = {check_onboarding_status(client, user_id)}")
 
         print("Activating Nigeria (NGN) rail ...")
-        activate_nigeria_rail(client, user_id, wallet_address, wallet_index)
+        rail_status = activate_nigeria_rail(client, user_id, wallet_address, wallet_index)
+        print(f"  rail status = {rail_status}")
 
-        print("Polling onboarding status until active ...")
-        final_status = poll_until_active(client, user_id)
-        print(f"  final status = {final_status}")
+        print("Confirming NGN wallet is usable ...")
+        balances = wait_for_ngn_wallet_ready(client, user_id)
+        print(f"  balances = {balances}")
 
     key_path = write_key_file(user_id, account.address, account.key.hex(), args.phone)
 

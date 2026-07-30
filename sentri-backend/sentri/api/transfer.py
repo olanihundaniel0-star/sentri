@@ -143,12 +143,19 @@ async def create_transfer(
         return TransferResponse(
             status=TransferStatus.HELD,
             transfer_id=transfer_id,
+            kind=verdict.kind,
             explanation=verdict.explanation,
             triggered_reasons=verdict.triggered_reasons,
         )
 
     result = await _execute(request, identity, bmoni_client)
-    return TransferResponse(status=TransferStatus.EXECUTED, bmoni_result=result)
+    return TransferResponse(
+        status=TransferStatus.EXECUTED,
+        kind=verdict.kind,
+        explanation=verdict.explanation,
+        triggered_reasons=verdict.triggered_reasons,
+        bmoni_result=result,
+    )
 
 
 @router.post("/transfer/{transfer_id}/confirm", response_model=TransferResponse)
@@ -165,5 +172,13 @@ async def confirm_transfer(
         )
 
     identity = _require_bridged_identity(pending.request.user_id)
-    result = await _execute(pending.request, identity, bmoni_client)
+    try:
+        result = await _execute(pending.request, identity, bmoni_client)
+    except HTTPException:
+        # _execute failed before BMONI confirmed anything moved (see its
+        # docstring: BMONITransferError -> 502, never a swallowed failure).
+        # Restore the pending transfer so the caller can retry confirm
+        # instead of the transfer_id being silently, permanently lost.
+        _pending_transfers[transfer_id] = pending
+        raise
     return TransferResponse(status=TransferStatus.EXECUTED, bmoni_result=result)
