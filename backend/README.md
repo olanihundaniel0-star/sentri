@@ -1,8 +1,9 @@
 # Sentri
 
-![Sentri Landing Banner](docs/images/sentri-hero.png)
-
 **Sentri is an AI security coprocessor for financial transactions.**
+![Sentri Banner](../docs/images/sentri-hero.png)
+
+## What is Sentri
 
 Before money moves, Sentri evaluates the transaction against the user's own
 behavioral history, computes deterministic deviation signals, and — when
@@ -65,12 +66,13 @@ uvicorn sentri.api.main:app --reload
 Both `ANTHROPIC_API_KEY` and `BMONI_API_KEY` are **optional for local
 development**. When they are absent, Sentri falls back gracefully:
 
+<<<<<<< HEAD:sentri-backend/README.md
 | Variable | Present | Absent |
 |----------|---------|--------|
 | `ANTHROPIC_API_KEY` | Explanations via Claude (claude-haiku-4-5-20251001) | Explanations via deterministic template renderer |
 | `BMONI_API_KEY` | Live BMONI sandbox (`https://embedded-dev.bmoni.com`) | In-memory stub backed by `seeds/data.json` |
 
-The server must be started from the `backend/` directory (or with it
+The server must be started from the `sentri-backend/` directory (or with it
 on `PYTHONPATH`) because the default stub loads `seeds/data.json` relative to
 the package root.
 
@@ -79,12 +81,21 @@ the package root.
 ## Architecture
 
 ### System overview
+=======
+The server must be started from the `backend/` directory (or with it on
+`PYTHONPATH`) — the default BMONI stub loads `seeds/data.json` relative to the
+current working directory.
 
-![Authorized by the Victim UI](docs/images/sentri-problem.png)
+## Architecture
+
+![6-Stage Pipeline & Signal Dimensions](../docs/images/sentri-architecture.png)
+
+Sentri is organized into layered modules:
+>>>>>>> main:backend/README.md
 
 ```mermaid
 graph LR
-    User(["👤 User<br/>initiate transfer"])
+    User(["👤 User\ninitiate transfer"])
 
     subgraph BMONI ["BMONI Platform"]
         Wallet["BMONI Wallet Engine"]
@@ -92,73 +103,72 @@ graph LR
 
     subgraph Sentri ["Sentri  ·  this repo"]
         API["POST /evaluate"]
-        BMONIAdapter["BMONIClient<br/>protocol.py"]
+        BMONIAdapter["BMONIClient\nprotocol.py"]
     end
 
-    AnthropicAPI(["☁️ Anthropic API<br/>claude-haiku"])
+    AnthropicAPI(["☁️ Anthropic API\nclaude-haiku"])
 
     User -->|transfer intent| Wallet
-    Wallet -->|"TransactionEvent<br/>(hook)"| API
-    API -->|"get_transaction_history()<br/>get_social_graph()"| BMONIAdapter
-    BMONIAdapter -->|"list[Transaction]<br/>SocialGraph?"| API
-    API -->|"Verdict<br/>SILENT_PASS / INTERVENE<br/>+ explanation"| Wallet
-    Wallet -->|transfer proceeds<br/>or user sees explanation| User
-    API <-->|"LLM synthesis<br/>(ANTHROPIC_API_KEY set)"| AnthropicAPI
-    API -->|"log_decision()<br/>audit trail"| BMONIAdapter
+    Wallet -->|"TransactionEvent\n(hook)"| API
+    API -->|"get_transaction_history()\nget_social_graph()"| BMONIAdapter
+    BMONIAdapter -->|"list[Transaction]\nSocialGraph?"| API
+    API -->|"Verdict\nSILENT_PASS / INTERVENE\n+ explanation"| Wallet
+    Wallet -->|transfer proceeds\nor user sees explanation| User
+    API <-->|"LLM synthesis\n(ANTHROPIC_API_KEY set)"| AnthropicAPI
+    API -->|"log_decision()\naudit trail"| BMONIAdapter
 ```
 
 ### Request pipeline
-
-![Behavioral Baseline Learning](docs/images/sentri-how-it-works.png)
 
 Every call to `POST /evaluate` passes through a strict, ordered pipeline:
 
 ```mermaid
 flowchart TD
-    A(["POST /evaluate<br/>TransactionEvent"])
+    A(["POST /evaluate\nTransactionEvent"])
 
     subgraph Step1 ["① Fetch data from BMONI"]
-        B["BMONIClient<br/>protocol.py · interface<br/>stub.py · local dev<br/>client.py · real sandbox"]
+        B["BMONIClient\nprotocol.py · interface\nstub.py · local dev\nclient.py · real sandbox"]
     end
 
     subgraph Step2 ["② Build behavioral profile"]
-        C["graph/builder.py<br/>build_profile()<br/>RecipientRollup · global stats<br/>hour histogram · currency set"]
+        C["graph/builder.py\nbuild_profile()\nRecipientRollup · global stats\nhour histogram · currency set"]
     end
 
     subgraph Step3 ["③ Score all deviation dimensions"]
-        D1["scorer/recipient<br/>familiarity score<br/>(recency-weighted, volume-floored)<br/><br/>graph proximity<br/>(direct · FOF · 0)"]
-        D2["scorer/amount<br/>recipient z-score<br/>global z-score<br/>drift ratio<br/>(30d vs 90d volatility)"]
-        D3["scorer/temporal<br/>hour deviation<br/>(circular mean)"]
-        D4["scorer/categorical<br/>currency_novelty<br/>cross_border"]
-        D5[["DeviationVector<br/>8 signals + z_score_path"]]
+        direction LR
+        D1["scorer/recipient\nfamiliarity score\n(recency-weighted,\nvolume-floored)\n\ngraph proximity\n(direct · FOF · 0)"]
+        D2["scorer/amount\nrecipient z-score\nglobal z-score\ndrift ratio\n(30d vs 90d volatility)"]
+        D3["scorer/temporal\nhour deviation\n(circular mean)"]
+        D4["scorer/categorical\ncurrency_novelty\ncross_border"]
+        D5[["DeviationVector\n8 signals + z_score_path"]]
         D1 & D2 & D3 & D4 --> D5
     end
 
     subgraph Step4 ["④ Apply thresholds"]
-        E["scorer/vector.py<br/>fires()  ·  should_intervene()<br/>RECIPIENT_FAMILIARITY and<br/>GRAPH_PROXIMITY are structural —<br/>cannot trigger INTERVENE alone"]
+        E["scorer/vector.py\nfires()  ·  should_intervene()\nRECIPIENT_FAMILIARITY and\nGRAPH_PROXIMITY are structural —\ncannot trigger INTERVENE alone"]
     end
 
-    F(["✅ Verdict<br/>SILENT_PASS"])
-    G(["⚠️ Verdict<br/>INTERVENE"])
+    F(["✅ Verdict\nSILENT_PASS"])
+    G(["⚠️ Verdict\nINTERVENE"])
 
     subgraph Step5 ["⑤ Tier 2 Explanation synthesis"]
-        H["ClaudeSynthesizer<br/>(ANTHROPIC_API_KEY set)<br/>↓<br/>validator.py:<br/>no verdict keywords<br/>no unsourced numbers<br/>max 3 sentences"]
-        I["TemplateOnlySynthesizer<br/>(key absent or validation fails)<br/>one canned sentence per reason<br/>always safe · always fast"]
-        H -->|"validation fails<br/>or timeout"| I
+        H["ClaudeSynthesizer\n(ANTHROPIC_API_KEY set)\n↓\nvalidator.py:\nno verdict keywords\nno unsourced numbers\nmax 3 sentences"]
+        I["TemplateOnlySynthesizer\n(key absent or validation fails)\none canned sentence per reason\nalways safe · always fast"]
+        H -->|"validation fails\nor timeout"| I
     end
 
     subgraph Step6 ["⑥ Audit log"]
-        J["bmoni.log_decision()<br/>fire-and-forget<br/>errors do not affect verdict"]
+        J["bmoni.log_decision()\nfire-and-forget\nerrors do not affect verdict"]
     end
 
-    A --> B
-    B -->|"list[Transaction]<br/>SocialGraph?"| C
-    C -->|UserProfile| D1 & D2 & D3 & D4
-    D5 -->|DeviationVector| E
-    E -->|"no non-structural<br/>reasons fired"| F
-    E -->|"≥1 non-structural<br/>reason fired"| H & I
-    H & I -->|"explanation<br/>synthesizer_used"| G
-    G --> J
+    A --> Step1
+    Step1 -->|"list[Transaction]\nSocialGraph?"| Step2
+    Step2 -->|UserProfile| Step3
+    Step3 -->|DeviationVector| Step4
+    Step4 -->|"no non-structural\nreasons fired"| F
+    Step4 -->|"≥1 non-structural\nreason fired"| Step5
+    Step5 -->|"explanation\nsynthesizer_used"| G
+    G --> Step6
 ```
 
 ### Module map
@@ -166,54 +176,54 @@ flowchart TD
 ```mermaid
 graph TD
     subgraph API ["sentri/api/"]
-        main["main.py<br/>FastAPI factory · CORS · router wiring"]
-        evaluate["evaluate.py<br/>POST /evaluate<br/>Tier 1 + Tier 2 pipeline"]
-        debug["debug.py<br/>GET /debug/health<br/>GET /debug/profile/user_id"]
-        deps["deps.py<br/>DI factories<br/>get_bmoni_client()<br/>get_synthesizer()"]
+        main["main.py\nFastAPI factory · CORS · router wiring"]
+        evaluate["evaluate.py\nPOST /evaluate\nTier 1 + Tier 2 pipeline"]
+        debug["debug.py\nGET /debug/health\nGET /debug/profile/{user_id}"]
+        deps["deps.py\nDI factories\nget_bmoni_client()\nget_synthesizer()"]
     end
 
     subgraph BMONI ["sentri/bmoni/"]
-        protocol["protocol.py<br/>BMONIClient Protocol<br/>(interface)"]
-        stub["stub.py<br/>InMemoryBMONIStub<br/>backed by seeds/data.json"]
-        client["client.py<br/>Real sandbox adapter<br/>httpx · x-api-key auth"]
+        protocol["protocol.py\nBMONIClient Protocol\n(interface)"]
+        stub["stub.py\nInMemoryBMONIStub\nbacked by seeds/data.json"]
+        client["client.py\nReal sandbox adapter\nhttpx · x-api-key auth"]
     end
 
     subgraph Canonical ["sentri/canonical/"]
-        timestamps["timestamps.py<br/>ingest_timestamp() · to_wat()<br/>ISO / Unix → WAT datetime"]
-        numeric["numeric.py<br/>money + time canonicalization<br/>for validator"]
-        sanitize["sanitize.py<br/>memo sanitization<br/>control chars + prompt-injection"]
+        timestamps["timestamps.py\ningest_timestamp() · to_wat()\nISO / Unix → WAT datetime"]
+        numeric["numeric.py\nmoney + time canonicalization\nfor validator"]
+        sanitize["sanitize.py\nmemo sanitization\ncontrol chars + prompt-injection"]
     end
 
     subgraph Graph ["sentri/graph/"]
-        builder["builder.py<br/>build_profile()<br/>aggregates history → UserProfile"]
-        familiarity["familiarity.py<br/>recency-weighted<br/>volume-floored score [0,1]"]
-        proximity["proximity.py<br/>direct=0.7 · FOF=0.4<br/>none=0.0"]
+        builder["builder.py\nbuild_profile()\naggregates history → UserProfile"]
+        familiarity["familiarity.py\nrecency-weighted\nvolume-floored score [0,1]"]
+        proximity["proximity.py\ndirect=0.7 · FOF=0.4\nnone=0.0"]
     end
 
     subgraph Models ["sentri/models/"]
-        transaction["transaction.py<br/>Transaction · TransactionEvent"]
-        profile["profile.py<br/>UserProfile · RecipientRollup<br/>SocialGraph"]
-        deviation["deviation.py<br/>DeviationVector<br/>TriggerReason ×8"]
-        verdict["verdict.py<br/>Verdict · VerdictKind<br/>SILENT_PASS · INTERVENE"]
+        transaction["transaction.py\nTransaction · TransactionEvent"]
+        profile["profile.py\nUserProfile · RecipientRollup\nSocialGraph"]
+        deviation["deviation.py\nDeviationVector\nTriggerReason ×8"]
+        verdict["verdict.py\nVerdict · VerdictKind\nSILENT_PASS · INTERVENE"]
     end
 
     subgraph Scorer ["sentri/scorer/"]
-        vector["vector.py<br/>build_vector() · fires()<br/>should_intervene()"]
-        recipient["recipient.py<br/>score_recipient()<br/>familiarity + proximity"]
-        amount["amount.py<br/>score_amount()<br/>z-scores + drift ratio"]
-        temporal["temporal.py<br/>score_hour()<br/>circular mean deviation"]
-        categorical["categorical.py<br/>score_categorical()<br/>currency novelty · cross-border"]
+        vector["vector.py\nbuild_vector() · fires()\nshould_intervene()"]
+        recipient["recipient.py\nscore_recipient()\nfamiliarity + proximity"]
+        amount["amount.py\nscore_amount()\nz-scores + drift ratio"]
+        temporal["temporal.py\nscore_hour()\ncircular mean deviation"]
+        categorical["categorical.py\nscore_categorical()\ncurrency novelty · cross-border"]
     end
 
     subgraph Synthesizer ["sentri/synthesizer/"]
-        sproto["protocol.py<br/>ExplanationSynthesizer Protocol"]
-        claude["claude.py<br/>ClaudeSynthesizer<br/>Anthropic API + fallback"]
-        template["template.py<br/>template_explanation()<br/>deterministic fallback"]
-        prompt["prompt.py<br/>SYSTEM_PROMPT<br/>build_llm_input()"]
-        validator["validator.py<br/>validate()<br/>blocklist + numeric grounding"]
+        sproto["protocol.py\nExplanationSynthesizer Protocol"]
+        claude["claude.py\nClaudeSynthesizer\nAnthropic API + fallback"]
+        template["template.py\ntemplate_explanation()\ndeterministic fallback"]
+        prompt["prompt.py\nSYSTEM_PROMPT\nbuild_llm_input()"]
+        validator["validator.py\nvalidate()\nblocklist + numeric grounding"]
     end
 
-    config["sentri/config.py<br/>All runtime config<br/>env-var overridable"]
+    config["sentri/config.py\nAll runtime config\nenv-var overridable"]
 
     evaluate --> deps
     evaluate --> builder
@@ -364,9 +374,7 @@ inspecting what behavioral profile the scorer sees. Feature-flagged via
 
 ---
 
-### Deviation signals
-
-![6-Stage Pipeline & Signal Dimensions](docs/images/sentri-architecture.png)
+## Deviation signals
 
 Sentri computes eight deviation signals and assembles them into a
 `DeviationVector`. The signals are grouped into four dimensions:
@@ -411,8 +419,6 @@ non-structural signal (amount, temporal, or categorical) also fires.
 
 ## Synthesizer tiers
 
-![In-App Intervention UI](docs/images/sentri-intervention.png)
-
 Sentri uses a two-tier explanation system:
 
 **Tier 1 — Deterministic scoring** (`sentri/scorer/`)  
@@ -444,8 +450,6 @@ or recipient names.
 ---
 
 ## BMONI integration
-
-![Embedded Infrastructure Integration](docs/images/sentri-infrastructure.png)
 
 Sentri talks to BMONI exclusively through the `BMONIClient` Protocol defined
 in `sentri/bmoni/protocol.py`:
@@ -556,4 +560,3 @@ packages are fully decoupled from BMONI and depend only on the canonical
 | Tests | pytest 8.3, pytest-asyncio 0.25 |
 | Linting | Ruff 0.11 |
 | Type checking | mypy 1.15 (strict) |
-

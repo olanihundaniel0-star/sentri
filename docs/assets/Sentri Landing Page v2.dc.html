@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{margin:0;background:#120a18;color:#f3ecf7;font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+    a{color:#c65fe8;text-decoration:none;}
+    a:hover{color:#e9b6ff;}
+    ::selection{background:#7e01af;color:#fff;}
+    @keyframes sentri-hero-in{from{opacity:0;transform:translateY(34px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes sentri-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-22px);}}
+    @keyframes sentri-blink{0%,94%,100%{transform:scaleY(0);}97%{transform:scaleY(1.7);}}
+    .sentri-eyelid{animation:sentri-blink 5.4s ease-in-out infinite;}
+    @keyframes sentri-breathe{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.34);}70%{box-shadow:0 0 0 20px rgba(255,255,255,0);}}
+    @keyframes sentri-ring-pulse{0%{transform:scale(.8);opacity:.8;}70%{transform:scale(2);opacity:0;}100%{transform:scale(2);opacity:0;}}
+    .sentri-ring.is-pulsing{animation:sentri-ring-pulse .8s ease-out;}
+    .sentri-eye{transition:transform .18s ease;}
+    .sentri-eye.is-startled{transform:scale(1.12);}
+    @media (prefers-reduced-motion: reduce){
+      html{scroll-behavior:auto;}
+      .sentri-eyelid,.sentri-ring.is-pulsing,.sentri-breathe{animation:none;}
+      .sentri-hero-in,.sentri-shard{animation:none !important;opacity:1 !important;transform:none !important;}
+    }
+  </style>
+</helmet>
+<div style="background:#120a18;overflow-x:clip;">
+
+  <header style="position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px clamp(18px,4vw,48px);background:rgba(18,10,24,0.78);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border-bottom:1px solid rgba(233,182,255,0.1);">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 24 24" style="width:19px;height:19px;flex:none;"><polygon points="12,2 22,7 22,17 12,22 2,17 2,7" fill="#7e01af"></polygon><polygon points="12,2 22,7 12,12 2,7" fill="#a044cc"></polygon><circle cx="12" cy="13" r="3" fill="#e9b6ff"></circle></svg>
+      <span style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:115%;font-size:19px;letter-spacing:-0.02em;color:#f3ecf7;">SENTRI</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:clamp(12px,2.4vw,28px);">
+      <a href="#problem" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#a99bb5;" style-hover="color:#f3ecf7;">PROBLEM</a>
+      <a href="#how" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#a99bb5;" style-hover="color:#f3ecf7;">HOW IT WORKS</a>
+      <a href="#action" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#a99bb5;" style-hover="color:#f3ecf7;">IN ACTION</a>
+      <a href="#infra" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#a99bb5;" style-hover="color:#f3ecf7;">INFRASTRUCTURE</a>
+      <button style="font-family:'Archivo',sans-serif;font-weight:800;font-stretch:110%;font-size:12.5px;letter-spacing:.04em;padding:12px 22px;border-radius:999px;background:#f6eefb;color:#170320;border:none;cursor:pointer;white-space:nowrap;" style-hover="background:#ffffff;">GET IN TOUCH</button>
+    </nav>
+  </header>
+
+  <section data-screen-label="Hero" ref="{{ heroRef }}" style="position:relative;background:#120a18;padding:clamp(48px,7vw,92px) clamp(18px,5vw,56px) clamp(56px,7vw,96px);overflow:hidden;">
+    <div style="position:absolute;top:12%;left:6%;width:clamp(52px,7vw,96px);transform:rotate(-16deg);opacity:.85;">
+      <div class="sentri-shard" style="animation:sentri-float 7.5s ease-in-out infinite;">
+        <svg viewBox="0 0 100 140" style="width:100%;height:auto;display:block;"><polygon points="50,4 88,52 62,136" fill="#8a1eb4"></polygon><polygon points="50,4 62,136 30,120" fill="#5c0f80"></polygon><polygon points="50,4 30,120 12,58" fill="#a044cc"></polygon></svg>
+      </div>
+    </div>
+    <div style="position:absolute;top:26%;right:7%;width:clamp(44px,6vw,84px);transform:rotate(22deg);opacity:.8;">
+      <div class="sentri-shard" style="animation:sentri-float 9s ease-in-out infinite;animation-delay:-2.2s;">
+        <svg viewBox="0 0 100 140" style="width:100%;height:auto;display:block;"><polygon points="50,4 88,52 62,136" fill="#7e01af"></polygon><polygon points="50,4 62,136 30,120" fill="#4c0a69"></polygon><polygon points="50,4 30,120 12,58" fill="#9c3ac4"></polygon></svg>
+      </div>
+    </div>
+    <div style="position:absolute;bottom:20%;left:11%;width:clamp(34px,4.4vw,62px);transform:rotate(34deg);opacity:.65;">
+      <div class="sentri-shard" style="animation:sentri-float 8.2s ease-in-out infinite;animation-delay:-4.5s;">
+        <svg viewBox="0 0 100 140" style="width:100%;height:auto;display:block;"><polygon points="50,4 88,52 62,136" fill="#660a8c"></polygon><polygon points="50,4 62,136 30,120" fill="#3d0857"></polygon><polygon points="50,4 30,120 12,58" fill="#8a1eb4"></polygon></svg>
+      </div>
+    </div>
+    <div style="position:absolute;bottom:26%;right:13%;width:clamp(30px,4vw,54px);transform:rotate(-28deg);opacity:.6;">
+      <div class="sentri-shard" style="animation:sentri-float 6.8s ease-in-out infinite;animation-delay:-1.4s;">
+        <svg viewBox="0 0 100 140" style="width:100%;height:auto;display:block;"><polygon points="50,4 88,52 62,136" fill="#5c0f80"></polygon><polygon points="50,4 62,136 30,120" fill="#340a49"></polygon><polygon points="50,4 30,120 12,58" fill="#7e01af"></polygon></svg>
+      </div>
+    </div>
+
+    <div class="sentri-hero-in" style="animation:sentri-hero-in 1s cubic-bezier(.16,.8,.24,1) both;position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.16em;color:#c65fe8;text-transform:uppercase;margin-bottom:clamp(20px,3vw,34px);">Embedded security coprocessor for banking apps</span>
+      <h1 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(26px,8.6vw,132px);line-height:0.85;letter-spacing:-0.03em;text-transform:uppercase;color:#e9d8f5;margin:0;"><span style="display:block;white-space:nowrap;">Fraud</span><span style="display:block;white-space:nowrap;">that passes</span><span style="display:block;white-space:nowrap;">every check</span></h1>
+      <div ref="{{ wrapRef }}" style="position:relative;z-index:3;isolation:isolate;width:clamp(190px,26vw,330px);margin-top:clamp(-28px,-2.6vw,-12px);">
+        <div style="position:absolute;left:50%;top:46%;width:150%;aspect-ratio:1;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(198,95,200,0.15) 0%, rgba(198,95,200,0.06) 45%, rgba(198,95,200,0) 72%);filter:blur(56px);pointer-events:none;z-index:-1;"></div>
+        <svg viewBox="0 0 400 420" style="width:100%;height:auto;display:block;overflow:visible;">
+          <defs>
+            <radialGradient id="sg-glow-a" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#c65fe8" stop-opacity="0.42"></stop>
+              <stop offset="100%" stop-color="#c65fe8" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="sg-eye-a" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#f2d5ff" stop-opacity="0.9"></stop>
+              <stop offset="100%" stop-color="#7e01af" stop-opacity="0"></stop>
+            </radialGradient>
+            <clipPath id="sg-clip-a"><polygon points="200,140 230,148 252,170 260,200 252,230 230,252 200,260 170,252 148,230 140,200 148,170 170,148"></polygon></clipPath>
+          </defs>
+          <ellipse cx="200" cy="200" rx="198" ry="190" fill="url(#sg-glow-a)"></ellipse>
+          <ellipse cx="200" cy="374" rx="104" ry="12" fill="#3d0857" opacity="0.6"></ellipse>
+          <g ref="{{ headRef }}" style="transform-box:fill-box;transform-origin:50% 92%;">
+            <polygon points="200,18 200,58 168,58" fill="#a044cc"></polygon>
+            <polygon points="200,18 232,58 200,58" fill="#660a8c"></polygon>
+            <polygon points="160,56 96,92 128,168 200,140 200,56" fill="#a044cc"></polygon>
+            <polygon points="240,56 200,56 200,140 272,168 304,92" fill="#7e01af"></polygon>
+            <polygon points="96,92 56,176 100,252 128,168" fill="#660a8c"></polygon>
+            <polygon points="304,92 272,168 300,252 344,176" fill="#4c0a69"></polygon>
+            <polygon points="56,176 82,288 140,306 100,252" fill="#5c0f80"></polygon>
+            <polygon points="344,176 300,252 260,306 318,288" fill="#3d0857"></polygon>
+            <polygon points="82,288 156,348 200,320 140,306" fill="#4c0a69"></polygon>
+            <polygon points="318,288 244,348 200,320 260,306" fill="#2c0640"></polygon>
+            <polygon points="140,306 200,320 260,306 230,268 170,268" fill="#5c0f80"></polygon>
+            <polygon points="156,348 244,348 200,320" fill="#340a49"></polygon>
+            <polyline points="200,18 168,58 96,92 56,176" fill="none" stroke="#d9a3f0" stroke-width="2.5" opacity="0.4"></polyline>
+            <g ref="{{ eyeRef }}" class="sentri-eye" style="transform-box:fill-box;transform-origin:center;">
+              <polygon points="200,124 238,134.2 265.8,162 276,200 265.8,238 238,265.8 200,276 162,265.8 134.2,238 124,200 134.2,162 162,134.2" fill="#9c3ac4"></polygon>
+              <polygon points="200,124 162,134.2 134.2,162 124,200 134.2,238 162,265.8 200,276 200,268 142,200 200,132" fill="#b45ad8" opacity="0.55"></polygon>
+              <polygon points="200,140 230,148 252,170 260,200 252,230 230,252 200,260 170,252 148,230 140,200 148,170 170,148" fill="#150220"></polygon>
+              <g clip-path="url(#sg-clip-a)">
+                <circle cx="200" cy="200" r="50" fill="url(#sg-eye-a)"></circle>
+                <g ref="{{ pupilRef }}">
+                  <circle cx="200" cy="200" r="32" fill="#c65fe8"></circle>
+                  <circle cx="200" cy="200" r="15" fill="#3f0a5c"></circle>
+                  <circle cx="188" cy="188" r="8" fill="#fbe9ff" opacity="0.95"></circle>
+                  <circle cx="211" cy="212" r="3.5" fill="#f2d5ff" opacity="0.6"></circle>
+                </g>
+                <rect class="sentri-eyelid" x="136" y="136" width="128" height="66" fill="#8a1eb4" style="transform-box:fill-box;transform-origin:center top;transform:scaleY(0);"></rect>
+              </g>
+              <circle ref="{{ ringRef }}" class="sentri-ring" cx="200" cy="200" r="86" fill="none" stroke="#e9b6ff" stroke-width="3" opacity="0" style="transform-box:fill-box;transform-origin:center;"></circle>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <p style="font-family:'IBM Plex Sans',sans-serif;font-size:clamp(17.5px,1.7vw,20.5px);line-height:1.78;color:#b9adc6;max-width:65ch;margin:clamp(4px,1.5vw,14px) 0 0;text-wrap:pretty;">Scam victims authorize their own transfers. Device, location, login and card all come back clean — so conventional fraud systems see nothing. Sentri learns how each customer actually moves money, and speaks up when a transfer doesn't fit.</p>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px;">
+        <a href="#how" style="display:inline-block;font-family:'Archivo',sans-serif;font-weight:900;font-stretch:112%;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:#170320;background:#f6eefb;padding:19px 34px;border-radius:999px;" style-hover="background:#ffffff;">See how it works</a>
+        <a href="#action" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c9bcd4;border:1px solid rgba(233,182,255,0.28);padding:18px 26px;border-radius:999px;" style-hover="color:#f3ecf7;border-color:rgba(233,182,255,0.55);">See the intervention</a>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0 26px;margin-top:clamp(34px,4vw,54px);max-width:660px;width:100%;">
+        <div style="padding:16px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:6px;text-align:left;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8d8299;text-transform:uppercase;">Built for</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;line-height:1.4;">Freelancers and cross-border earners</span>
+        </div>
+        <div style="padding:16px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:6px;text-align:left;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8d8299;text-transform:uppercase;">Watches</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;line-height:1.4;">Behavior, not devices</span>
+        </div>
+        <div style="padding:16px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:6px;text-align:left;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8d8299;text-transform:uppercase;">Never does</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;line-height:1.4;">Score, block or recommend</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="problem" data-screen-label="Problem" ref="{{ problemRef }}" style="background:#7e01af;padding:clamp(72px,9vw,128px) clamp(18px,5vw,56px);">
+    <div style="{{ problemStyle }}max-width:1240px;margin:0 auto;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#efd6fb;">The case ordinary fraud detection cannot see</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,82px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#fdf7ff;margin:14px 0 0;"><span style="display:block;white-space:nowrap;">Authorized</span><span style="display:block;white-space:nowrap;">by the victim</span></h2>
+
+      <div style="display:grid;grid-template-columns:minmax(280px,0.9fr) minmax(320px,1fr);gap:clamp(32px,4vw,64px);margin-top:clamp(38px,4.5vw,64px);align-items:start;">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <p style="font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.62;color:#f4e4fb;margin:0;text-wrap:pretty;">A fake recruiter on WhatsApp. A coached, urgent transfer. The account holder logs in from his own phone, types his own PIN, and sends the money himself. Nothing about it looks unauthorized — because nothing about it is.</p>
+          <p style="font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.62;color:#f4e4fb;margin:0;text-wrap:pretty;">Sentri is built for exactly this case: the person is the one being compromised, not the account.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+            <sc-for list="{{ signalPills }}" as="pill" hint-placeholder-count="5">
+              <span style="{{ pill.style }}">
+                <sc-if value="{{ pill.check }}" hint-placeholder-val="{{ true }}">
+                  <svg viewBox="0 0 16 16" style="width:12px;height:12px;flex:none;"><path d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </sc-if>
+                {{ pill.label }}
+              </span>
+            </sc-for>
+          </div>
+          <p style="font-family:'Archivo',sans-serif;font-weight:800;font-stretch:105%;font-size:clamp(19px,2.1vw,26px);line-height:1.24;color:#fdf7ff;margin:12px 0 0;max-width:460px;text-wrap:pretty;">Every signal a bank already checks comes back clean. That is precisely why this scam works.</p>
+        </div>
+
+        <div style="background:rgba(20,20,25,0.7);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(12,4,18,0.4);">
+          <div style="display:flex;align-items:center;gap:11px;padding-bottom:14px;border-bottom:1px solid rgba(233,182,255,0.1);">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(233,182,255,0.12);display:flex;align-items:center;justify-content:center;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;color:#d6cbe0;flex:none;">G</div>
+            <div style="display:flex;flex-direction:column;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:500;color:#f3ecf7;">Grace · Meridian Talent Partners</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#8d8299;">MESSAGING APP · UNVERIFIED</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+            <div style="max-width:92%;background:rgba(233,182,255,0.08);border-radius:16px 16px 16px 5px;padding:13px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;line-height:1.5;color:#e8e0ee;">Hello. This is Grace from Meridian Talent Partners. We reviewed your profile — remote data-entry role, $450 per week, flexible hours. Interested?</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8d8299;padding-left:6px;">— READS LIKE A NORMAL RECRUITER</span>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="max-width:62%;background:rgba(126,1,175,0.4);border-radius:16px 16px 5px 16px;padding:13px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;color:#f3ecf7;">Yes, very interested.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+            <div style="max-width:92%;background:rgba(233,182,255,0.08);border-radius:16px 16px 16px 5px;padding:13px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;line-height:1.5;color:#e8e0ee;">Before onboarding, HR requires a refundable ₦45,000 verification deposit. It confirms you are a real applicant and is returned with your first paycheck.</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8d8299;padding-left:6px;">— THE ASK, DRESSED UP AS ROUTINE</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+            <div style="max-width:92%;background:rgba(233,182,255,0.08);border-radius:16px 16px 16px 5px;padding:13px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;line-height:1.5;color:#e8e0ee;">This batch closes today. Can you send it within the next 30 minutes?</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8d8299;padding-left:6px;">— MANUFACTURED URGENCY</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-top:2px;">
+            <div style="max-width:76%;background:#7e01af;border-radius:16px 16px 5px 16px;padding:13px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;color:#fff;">Transfer sent · ₦45,000</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#e9b6ff;padding-right:6px;">— HIS OWN PIN. EVERY SIGNAL CLEAN.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" data-screen-label="How Sentri works" ref="{{ howRef }}" style="background:linear-gradient(180deg,#7e01af 0%,#c07ad8 46px,#ddd0ea 118px,#ece2f5 240px);padding:clamp(72px,9vw,128px) clamp(18px,5vw,56px);">
+    <div style="{{ howStyle }}max-width:1240px;margin:0 auto;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7e01af;">The loop</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,82px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#2a0a3d;margin:14px 0 0;"><span style="display:block;white-space:nowrap;">Compared to you,</span><span style="display:block;white-space:nowrap;">not to everyone</span></h2>
+      <p style="font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.62;color:#54405f;margin:22px 0 0;max-width:560px;text-wrap:pretty;">Four steps run on every transfer. Most stop at step two, silently. Select a step to read it.</p>
+
+      <div style="display:flex;justify-content:flex-start;gap:clamp(16px,3.4vw,48px);flex-wrap:wrap;margin-top:clamp(34px,4vw,52px);">
+        <sc-for list="{{ loopSteps }}" as="step" hint-placeholder-count="4">
+          <button onClick="{{ step.onSelect }}" style="{{ step.nodeStyle }}">
+            <div style="{{ step.circleStyle }}">{{ step.n }}</div>
+            <span style="{{ step.labelStyle }}">{{ step.title }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:32px;background:#fffdff;border:1px solid rgba(42,10,61,0.1);border-radius:20px;padding:clamp(26px,3.6vw,44px);display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;">
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:600px;">
+          <h3 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:110%;font-size:clamp(22px,2.4vw,30px);letter-spacing:-0.01em;text-transform:uppercase;color:#2a0a3d;margin:0;">{{ activeTitle }}</h3>
+          <p style="font-family:'IBM Plex Sans',sans-serif;font-size:16px;line-height:1.65;color:#54405f;margin:0;text-wrap:pretty;">{{ activeBody }}</p>
+        </div>
+        <div style="width:214px;height:132px;display:flex;align-items:center;justify-content:center;">
+          <sc-if value="{{ showLearn }}" hint-placeholder-val="{{ true }}">
+            <svg viewBox="0 0 214 132" style="width:214px;height:132px;">
+              <rect x="1" y="1" width="212" height="130" rx="10" fill="#f7f2fb" stroke="rgba(42,10,61,0.1)"></rect>
+              <path d="M14 34H200M14 66H200M14 98H200" stroke="rgba(42,10,61,0.07)" stroke-width="1"></path>
+              <path d="M52 14V118M104 14V118M156 14V118" stroke="rgba(42,10,61,0.07)" stroke-width="1"></path>
+              <path d="M14 82C34 82 40 46 60 46S86 74 106 74s26-30 46-30 28 22 48 22" fill="none" stroke="#c9a8dd" stroke-width="2" stroke-dasharray="4 4"></path>
+              <path d="M14 78C36 78 42 52 62 52s24 24 44 24 26-26 46-26 26 18 48 18" fill="none" stroke="#7e01af" stroke-width="2.5" stroke-linecap="round"></path>
+              <circle cx="30" cy="80" r="3" fill="#9c3ac4" opacity="0.55"></circle>
+              <circle cx="46" cy="66" r="3" fill="#9c3ac4" opacity="0.55"></circle>
+              <circle cx="58" cy="55" r="3.4" fill="#9c3ac4" opacity="0.7"></circle>
+              <circle cx="74" cy="61" r="3" fill="#9c3ac4" opacity="0.55"></circle>
+              <circle cx="92" cy="72" r="3.2" fill="#9c3ac4" opacity="0.6"></circle>
+              <circle cx="110" cy="70" r="3" fill="#9c3ac4" opacity="0.5"></circle>
+              <circle cx="128" cy="60" r="3.2" fill="#9c3ac4" opacity="0.6"></circle>
+              <circle cx="146" cy="52" r="3" fill="#9c3ac4" opacity="0.5"></circle>
+              <circle cx="164" cy="56" r="3.2" fill="#9c3ac4" opacity="0.6"></circle>
+              <circle cx="182" cy="62" r="3" fill="#9c3ac4" opacity="0.5"></circle>
+              <circle cx="120" cy="26" r="5" fill="#7e01af"></circle>
+              <circle cx="120" cy="26" r="10" fill="none" stroke="#7e01af" stroke-width="1.5" opacity="0.45"></circle>
+              <circle cx="172" cy="108" r="4" fill="#7e01af" opacity="0.8"></circle>
+              <text x="14" y="126" font-family="IBM Plex Mono, monospace" font-size="7" letter-spacing="0.1em" fill="#665073">90 DAYS OF THIS PERSON</text>
+            </svg>
+          </sc-if>
+          <sc-if value="{{ showCompare }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <svg viewBox="0 0 60 80" style="width:44px;height:60px;"><polygon points="30,4 56,20 56,58 30,76 4,58 4,20" fill="#d8c2e8"></polygon><polygon points="30,4 56,20 30,36 4,20" fill="#e8dcf2"></polygon></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:#7e01af;">MATCH</span>
+              <svg viewBox="0 0 60 80" style="width:44px;height:60px;"><polygon points="30,4 56,20 56,58 30,76 4,58 4,20" fill="#7e01af"></polygon><polygon points="30,4 56,20 30,36 4,20" fill="#a044cc"></polygon></svg>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showExplain }}" hint-placeholder-val="{{ false }}">
+            <div style="width:154px;padding:15px 17px;background:#2a0a3d;border-radius:14px 14px 14px 5px;display:flex;flex-direction:column;gap:7px;">
+              <div style="width:82%;height:6px;background:rgba(233,182,255,0.6);"></div>
+              <div style="width:100%;height:6px;background:rgba(233,182,255,0.6);"></div>
+              <div style="width:58%;height:6px;background:rgba(233,182,255,0.6);"></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showDecide }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px;width:162px;">
+              <div style="padding:11px;border-radius:999px;border:1.5px solid #7e01af;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#4a0f6b;">SEND ANYWAY</div>
+              <div style="padding:11px;border-radius:999px;border:1.5px solid #7e01af;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#4a0f6b;">LET ME CHECK</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:#665073;margin:20px 0 0;">04 → 01 — EVERY DECISION, RIGHT OR WRONG, RETRAINS WHAT NORMAL MEANS.</p>
+    </div>
+  </section>
+
+  <section id="action" data-screen-label="Sentri in action" ref="{{ actionRef }}" style="position:relative;background:#120a18;padding:clamp(72px,9vw,128px) clamp(18px,5vw,56px);">
+    <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(233,182,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(233,182,255,0.05) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;"></div>
+    <div style="{{ actionStyle }}position:relative;max-width:1320px;margin:0 auto;">
+      <div style="text-align:center;display:flex;flex-direction:column;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#c65fe8;">What the customer sees</span>
+        <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,82px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#e9d8f5;margin:14px 0 0;"><span style="display:block;white-space:nowrap;">Silent until</span><span style="display:block;white-space:nowrap;">it matters</span></h2>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:clamp(30px,4vw,56px);margin-top:clamp(38px,4.5vw,64px);">
+        <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;">
+          <div style="border-radius:48px;box-shadow:0 0 0 1px rgba(233,182,255,0.22), 0 0 60px rgba(126,1,175,0.28), 0 40px 90px rgba(0,0,0,0.55);">
+          <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" width="{{ phoneWidth }}" height="{{ phoneHeight }}" hint-size="320px,700px">
+            <sc-if value="{{ isTypical }}" hint-placeholder-val="{{ true }}">
+              <div style="min-height:100%;padding:62px 22px 22px;display:flex;flex-direction:column;font-family:'IBM Plex Sans',sans-serif;background:#0f0e14;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:26px;color:rgba(255,255,255,0.55);">
+                  <svg viewBox="0 0 12 20" style="width:8px;height:14px;flex:none;"><path d="M9 2L2 10l7 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  <span style="color:#fff;font-size:15px;font-weight:500;">Transfer</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;">
+                  <div style="width:54px;height:54px;border-radius:50%;background:rgba(126,1,175,0.2);border:1px solid rgba(198,95,232,0.45);display:flex;align-items:center;justify-content:center;color:#c65fe8;">
+                    <svg viewBox="0 0 16 16" style="width:22px;height:22px;"><path d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  </div>
+                  <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:21px;color:#fff;">Transfer complete</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;color:#fff;">₦45,000</div>
+                  <div style="font-size:13.5px;color:rgba(255,255,255,0.55);">to Chidi O. · sent 14 times before</div>
+                </div>
+                <div style="text-align:center;padding-top:16px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:rgba(255,255,255,0.55);">SENTRI CHECKED THIS · NOTHING TO SAY</span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isFlagged }}" hint-placeholder-val="{{ false }}">
+              <div style="min-height:100%;padding:62px 22px 22px;display:flex;flex-direction:column;font-family:'IBM Plex Sans',sans-serif;background:#0f0e14;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;color:rgba(255,255,255,0.55);">
+                  <svg viewBox="0 0 12 20" style="width:8px;height:14px;flex:none;"><path d="M9 2L2 10l7 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  <span style="color:#fff;font-size:15px;font-weight:500;">Before you send</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;color:#fff;">₦280,000</span>
+                  <span style="font-size:12.5px;color:rgba(255,255,255,0.55);">to new recipient · 0801•••229</span>
+                </div>
+                <div style="background:rgba(126,1,175,0.16);border:1px solid rgba(198,95,232,0.4);border-radius:16px;padding:17px;display:flex;flex-direction:column;gap:9px;margin-bottom:auto;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#e9b6ff;">WHAT IS DIFFERENT</span>
+                  <span style="font-size:14px;line-height:1.55;color:#f6eefb;">You have not sent to this recipient before, and it is larger than your usual transfers this month.</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+                  <button style="padding:14px;border-radius:999px;border:1px solid rgba(255,255,255,0.24);background:transparent;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">This is me — send anyway</button>
+                  <button style="padding:14px;border-radius:999px;border:1px solid rgba(255,255,255,0.24);background:transparent;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Stop, let me check</button>
+                </div>
+                <div style="text-align:center;padding-top:14px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:rgba(255,255,255,0.55);">NO SCORE · NO BLOCK · NO ADVICE</span>
+                </div>
+              </div>
+            </sc-if>
+          </x-import>
+          </div>
+
+          <div style="display:flex;gap:8px;background:#1b1222;border:1px solid rgba(233,182,255,0.14);border-radius:999px;padding:6px;margin-top:24px;width:100%;max-width:340px;">
+            <button onClick="{{ selectTypical }}" style="{{ typicalBtnStyle }}">TYPICAL TRANSFER</button>
+            <button onClick="{{ selectFlagged }}" style="{{ flaggedBtnStyle }}">SOMETHING DIFFERENT</button>
+          </div>
+        </div>
+
+        <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:clamp(16px,2vw,26px);">
+          <div style="background:#2a0a3d;border-radius:22px;padding:26px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:212px;transition:transform .3s ease-in-out, box-shadow .3s ease-in-out;" style-hover="transform:translateY(-4px);box-shadow:0 18px 44px rgba(126,1,175,0.42);">
+            <h3 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:108%;font-size:clamp(19px,1.9vw,25px);line-height:1.15;color:#f0e4f8;margin:0;text-wrap:pretty;">It learns one customer's own normal</h3>
+            <div style="display:flex;align-items:flex-end;gap:7px;height:56px;align-self:flex-end;">
+              <div style="width:11px;height:20px;background:#4c0a69;"></div>
+              <div style="width:11px;height:38px;background:#7e01af;"></div>
+              <div style="width:11px;height:28px;background:#5c0f80;"></div>
+              <div style="width:11px;height:52px;background:#c65fe8;"></div>
+              <div style="width:11px;height:32px;background:#8a1eb4;"></div>
+            </div>
+          </div>
+          <div style="background:#ece2f5;border-radius:22px;padding:26px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:212px;transition:transform .3s ease-in-out, box-shadow .3s ease-in-out;" style-hover="transform:translateY(-4px);box-shadow:0 18px 44px rgba(126,1,175,0.42);">
+            <h3 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:108%;font-size:clamp(19px,1.9vw,25px);line-height:1.15;color:#2a0a3d;margin:0;text-wrap:pretty;">A transfer that fits stays silent</h3>
+            <svg viewBox="0 0 120 80" style="width:104px;height:70px;align-self:flex-end;"><polygon points="60,6 110,32 110,66 60,74 10,66 10,32" fill="#d8c2e8"></polygon><polygon points="60,6 110,32 60,44 10,32" fill="#efe6f7"></polygon><circle cx="60" cy="46" r="7" fill="#7e01af"></circle></svg>
+          </div>
+          <div style="background:#7e01af;border-radius:22px;padding:26px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:212px;transition:transform .3s ease-in-out, box-shadow .3s ease-in-out;" style-hover="transform:translateY(-4px);box-shadow:0 18px 44px rgba(126,1,175,0.42);">
+            <h3 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:108%;font-size:clamp(19px,1.9vw,25px);line-height:1.15;color:#fdf7ff;margin:0;text-wrap:pretty;">One that doesn't fit gets one plain sentence</h3>
+            <div style="align-self:flex-end;width:150px;padding:15px 17px;background:#2a0a3d;border-radius:14px 14px 14px 5px;display:flex;flex-direction:column;gap:7px;">
+              <div style="width:84%;height:6px;background:rgba(233,182,255,0.55);"></div>
+              <div style="width:100%;height:6px;background:rgba(233,182,255,0.55);"></div>
+              <div style="width:56%;height:6px;background:rgba(233,182,255,0.55);"></div>
+            </div>
+          </div>
+          <div style="background:#4a0f6b;border-radius:22px;padding:26px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:212px;transition:transform .3s ease-in-out, box-shadow .3s ease-in-out;" style-hover="transform:translateY(-4px);box-shadow:0 18px 44px rgba(126,1,175,0.42);">
+            <h3 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:108%;font-size:clamp(19px,1.9vw,25px);line-height:1.15;color:#f0e4f8;margin:0;text-wrap:pretty;">The customer decides, every time</h3>
+            <div style="display:flex;flex-direction:column;gap:9px;width:100%;max-width:190px;align-self:flex-end;">
+              <div style="padding:11px;border-radius:999px;border:1.5px solid rgba(233,182,255,0.5);text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;color:#e9b6ff;">SEND ANYWAY</div>
+              <div style="padding:11px;border-radius:999px;border:1.5px solid rgba(233,182,255,0.5);text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;color:#e9b6ff;">LET ME CHECK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#8d8299;margin:26px auto 0;max-width:480px;text-align:center;text-wrap:pretty;">Working mockup of the intervention screen. In production it renders inside the bank's own app UI, not a separate Sentri screen.</p>
+    </div>
+  </section>
+
+  <section id="infra" data-screen-label="Why infrastructure" ref="{{ infraRef }}" style="background:#2a0a3d;padding:clamp(72px,9vw,128px) clamp(18px,5vw,56px);">
+    <div style="{{ infraStyle }}max-width:1240px;margin:0 auto;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#c65fe8;">How it ships</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,82px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#e9d8f5;margin:14px 0 0;"><span style="display:block;white-space:nowrap;">Infrastructure,</span><span style="display:block;white-space:nowrap;">not an app</span></h2>
+
+      <div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(280px,0.85fr);gap:clamp(32px,4vw,64px);margin-top:clamp(38px,4.5vw,64px);align-items:center;">
+        <div style="display:flex;flex-direction:column;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:#9a8ea6;margin-bottom:16px;">YOUR BANK'S APP</span>
+          <div style="position:relative;z-index:1;background:rgba(255,255,255,0.055);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:19px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 14px 30px rgba(8,2,14,0.35);">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#d6cbe0;">Login</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:#9a8ea6;">EXISTING</span>
+          </div>
+          <div style="position:relative;z-index:2;margin-top:-10px;background:rgba(255,255,255,0.055);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:19px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 14px 30px rgba(8,2,14,0.35);">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#d6cbe0;">Card controls</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:#9a8ea6;">EXISTING</span>
+          </div>
+          <div style="position:relative;z-index:3;margin-top:-10px;background:rgba(255,255,255,0.055);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:19px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 14px 30px rgba(8,2,14,0.35);">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#d6cbe0;">Transfers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:#9a8ea6;">EXISTING</span>
+          </div>
+          <div style="position:relative;z-index:4;margin-top:-10px;background:rgba(126,1,175,0.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(233,182,255,0.5);border-radius:16px;padding:22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 0 44px rgba(126,1,175,0.6), 0 18px 40px rgba(8,2,14,0.45);">
+            <span style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:110%;font-size:16px;letter-spacing:.02em;color:#fdf7ff;">SENTRI</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:#f0d5fb;">FOUNDATION LAYER · CATCHES WHAT PASSES ABOVE</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <p style="font-family:'IBM Plex Sans',sans-serif;font-size:16.5px;line-height:1.62;color:#c4b8cf;margin:0;text-wrap:pretty;">Sentri sits inside a bank's existing app, between the confirm button and the ledger — checking the transfer being made right now against the pattern of everything that came before it.</p>
+          <p style="font-family:'IBM Plex Sans',sans-serif;font-size:16.5px;line-height:1.62;color:#c4b8cf;margin:0;text-wrap:pretty;">Powered by BMONI, it runs as an embedded coprocessor: infrastructure a bank integrates once, not a feature its customers have to find.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 22px;margin-top:10px;">
+            <div style="padding:14px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:7px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c65fe8;">01</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;">No new app to download</span>
+            </div>
+            <div style="padding:14px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:7px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c65fe8;">02</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;">No new login to create</span>
+            </div>
+            <div style="padding:14px 0 0;border-top:1px solid rgba(233,182,255,0.22);display:flex;flex-direction:column;gap:7px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c65fe8;">03</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#d6cbe0;">No habit to change</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cred" data-screen-label="Credibility" ref="{{ credRef }}" style="background:#ece2f5;padding:clamp(72px,9vw,128px) clamp(18px,5vw,56px);">
+    <div style="{{ credStyle }}max-width:800px;margin:0 auto;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7e01af;">Where this stands</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,82px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#2a0a3d;margin:14px 0 0;"><span style="display:block;white-space:nowrap;">Built at</span><span style="display:block;white-space:nowrap;">NITHUB 2026</span></h2>
+      <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 40px;margin-top:clamp(32px,4vw,52px);">
+        <div style="display:flex;flex-direction:column;gap:7px;padding:18px 2px;border-top:1px solid rgba(42,10,61,0.16);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#665073;white-space:nowrap;">EVENT</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;color:#2a0a3d;">NITHUB Innovation Fair 2026</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;padding:18px 2px;border-top:1px solid rgba(42,10,61,0.16);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#665073;white-space:nowrap;">THEME</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;color:#2a0a3d;">Intelligent Money for Everyone</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;padding:18px 2px;border-top:1px solid rgba(42,10,61,0.16);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#665073;white-space:nowrap;">ENGINE</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;color:#2a0a3d;">Powered by BMONI</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;padding:18px 2px;border-top:1px solid rgba(42,10,61,0.16);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#665073;white-space:nowrap;">BUILT</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;color:#2a0a3d;">Inside a single hackathon window — this page included</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Close" ref="{{ closeRef }}" style="background:#7e01af;padding:clamp(84px,10vw,140px) clamp(18px,5vw,56px) clamp(84px,10vw,140px);">
+    <div style="{{ closeStyle }}max-width:1240px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:30px;">
+      <h2 style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:125%;font-size:clamp(20px,6.2vw,90px);line-height:0.86;letter-spacing:-0.03em;text-transform:uppercase;color:#fdf7ff;margin:0;"><span style="display:block;white-space:nowrap;">Put Sentri</span><span style="display:block;white-space:nowrap;">inside your app</span></h2>
+      <p style="font-family:'IBM Plex Sans',sans-serif;font-size:17px;line-height:1.6;color:#f4e4fb;margin:0;max-width:560px;text-wrap:pretty;">The scam isn't going away. The blind spot can.</p>
+      <button class="sentri-breathe" style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:112%;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:#170320;background:#f6eefb;padding:20px 38px;border-radius:999px;border:none;cursor:pointer;animation:sentri-breathe 2.8s ease-out infinite;" style-hover="background:#ffffff;">Get in touch</button>
+    </div>
+  </section>
+
+  <footer style="background:#120a18;padding:44px clamp(18px,5vw,56px);">
+    <div style="max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;flex:none;"><polygon points="12,2 22,7 22,17 12,22 2,17 2,7" fill="#7e01af"></polygon><polygon points="12,2 22,7 12,12 2,7" fill="#a044cc"></polygon><circle cx="12" cy="13" r="3" fill="#e9b6ff"></circle></svg>
+          <span style="font-family:'Archivo',sans-serif;font-weight:900;font-stretch:112%;font-size:15px;color:#f3ecf7;">SENTRI</span>
+        </div>
+        <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#8d8299;max-width:340px;line-height:1.5;">An embedded AI security coprocessor for banking apps.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;text-align:right;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#8d8299;">NITHUB INNOVATION FAIR · 2026</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#8d8299;">POWERED BY BMONI</span>
+      </div>
+    </div>
+  </footer>
+
+  <sc-if value="{{ showWatcher }}" hint-placeholder-val="{{ true }}">
+    <div ref="{{ watcherRef }}" style="position:fixed;right:22px;bottom:22px;z-index:55;width:78px;opacity:0;transform:translateY(18px);transition:opacity .5s ease, transform .5s ease;pointer-events:none;">
+      <div ref="{{ wrap2Ref }}" style="position:relative;padding:9px;border-radius:50%;background:rgba(18,10,24,0.72);border:1px solid rgba(233,182,255,0.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
+        <svg viewBox="0 0 400 380" style="width:100%;height:auto;display:block;">
+          <defs>
+            <radialGradient id="sg-eye-b" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#f2d5ff" stop-opacity="0.9"></stop>
+              <stop offset="100%" stop-color="#7e01af" stop-opacity="0"></stop>
+            </radialGradient>
+            <clipPath id="sg-clip-b"><polygon points="200,140 230,148 252,170 260,200 252,230 230,252 200,260 170,252 148,230 140,200 148,170 170,148"></polygon></clipPath>
+          </defs>
+          <g ref="{{ head2Ref }}" style="transform-box:fill-box;transform-origin:50% 92%;">
+            <polygon points="200,18 200,58 168,58" fill="#a044cc"></polygon>
+            <polygon points="200,18 232,58 200,58" fill="#660a8c"></polygon>
+            <polygon points="160,56 96,92 128,168 200,140 200,56" fill="#a044cc"></polygon>
+            <polygon points="240,56 200,56 200,140 272,168 304,92" fill="#7e01af"></polygon>
+            <polygon points="96,92 56,176 100,252 128,168" fill="#660a8c"></polygon>
+            <polygon points="304,92 272,168 300,252 344,176" fill="#4c0a69"></polygon>
+            <polygon points="56,176 82,288 140,306 100,252" fill="#5c0f80"></polygon>
+            <polygon points="344,176 300,252 260,306 318,288" fill="#3d0857"></polygon>
+            <polygon points="82,288 156,348 200,320 140,306" fill="#4c0a69"></polygon>
+            <polygon points="318,288 244,348 200,320 260,306" fill="#2c0640"></polygon>
+            <polygon points="140,306 200,320 260,306 230,268 170,268" fill="#5c0f80"></polygon>
+            <polygon points="156,348 244,348 200,320" fill="#340a49"></polygon>
+            <g ref="{{ eye2Ref }}" class="sentri-eye" style="transform-box:fill-box;transform-origin:center;">
+              <polygon points="200,124 238,134.2 265.8,162 276,200 265.8,238 238,265.8 200,276 162,265.8 134.2,238 124,200 134.2,162 162,134.2" fill="#9c3ac4"></polygon>
+              <polygon points="200,140 230,148 252,170 260,200 252,230 230,252 200,260 170,252 148,230 140,200 148,170 170,148" fill="#150220"></polygon>
+              <g clip-path="url(#sg-clip-b)">
+                <circle cx="200" cy="200" r="50" fill="url(#sg-eye-b)"></circle>
+                <g ref="{{ pupil2Ref }}">
+                  <circle cx="200" cy="200" r="32" fill="#c65fe8"></circle>
+                  <circle cx="200" cy="200" r="15" fill="#3f0a5c"></circle>
+                  <circle cx="188" cy="188" r="8" fill="#fbe9ff" opacity="0.95"></circle>
+                </g>
+                <rect class="sentri-eyelid" x="136" y="136" width="128" height="66" fill="#8a1eb4" style="transform-box:fill-box;transform-origin:center top;transform:scaleY(0);"></rect>
+              </g>
+              <circle ref="{{ ring2Ref }}" class="sentri-ring" cx="200" cy="200" r="86" fill="none" stroke="#e9b6ff" stroke-width="4" opacity="0" style="transform-box:fill-box;transform-origin:center;"></circle>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;mascotStartleEnabled&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Mascot&quot;},
+  &quot;showWatcher&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Mascot&quot;},
+  &quot;loopAutoAdvance&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;How it works&quot;},
+  &quot;phoneDefaultState&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;typical&quot;, &quot;tsType&quot;: &quot;'typical' | 'flagged'&quot;, &quot;options&quot;: [&quot;typical&quot;, &quot;flagged&quot;], &quot;section&quot;: &quot;Sentri in action&quot;}
+}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.wrapRef = React.createRef();
+    this.headRef = React.createRef();
+    this.pupilRef = React.createRef();
+    this.ringRef = React.createRef();
+    this.eyeRef = React.createRef();
+    this.wrap2Ref = React.createRef();
+    this.head2Ref = React.createRef();
+    this.pupil2Ref = React.createRef();
+    this.ring2Ref = React.createRef();
+    this.eye2Ref = React.createRef();
+    this.watcherRef = React.createRef();
+    this.heroRef = React.createRef();
+    this.problemRef = React.createRef();
+    this.howRef = React.createRef();
+    this.actionRef = React.createRef();
+    this.infraRef = React.createRef();
+    this.credRef = React.createRef();
+    this.closeRef = React.createRef();
+    this.state = {
+      visible: {},
+      activeStep: 0,
+      phoneFlagged: props.phoneDefaultState === 'flagged',
+    };
+    this.steps = [
+      { key: 'learn', n: '01', title: 'Learn', body: "Sentri builds a picture of one person's normal: who they pay, how much, how often, from where, on what kind of day. It is their own history, not a population average." },
+      { key: 'compare', n: '02', title: 'Compare', body: "Every new transfer is checked against that picture — not a generic fraud model, not anyone else's behavior. A transfer that fits passes without a word." },
+      { key: 'explain', n: '03', title: 'Explain', body: "A mismatch does not trigger a block. It triggers one short, factual sentence about what is different this time, in language a person reads in three seconds." },
+      { key: 'decide', n: '04', title: 'You decide', body: "No score, no recommendation, no lecture. The customer reads the one fact that matters and chooses — with a few more seconds than the scammer wants them to have." },
+    ];
+  }
+
+  componentDidMount() {
+    this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    const targets = [
+      [this.problemRef, 'problem'], [this.howRef, 'how'], [this.actionRef, 'action'],
+      [this.infraRef, 'infra'], [this.credRef, 'cred'], [this.closeRef, 'close'],
+    ];
+    this.io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          const found = targets.find((t) => t[0].current === en.target);
+          if (found) {
+            this.setState((s) => ({ visible: { ...s.visible, [found[1]]: true } }));
+            this.io.unobserve(en.target);
+          }
+        }
+      });
+    }, { threshold: 0.14 });
+    targets.forEach(([ref]) => { if (ref.current) this.io.observe(ref.current); });
+
+    this.rects = { a: null, b: null };
+    this.measure();
+    this._onScroll = () => {
+      if (this._scrollQueued) return;
+      this._scrollQueued = true;
+      requestAnimationFrame(() => {
+        this._scrollQueued = false;
+        this.measure();
+        this.updateWatcher();
+      });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true, capture: true });
+    window.addEventListener('resize', this._onScroll);
+    this.updateWatcher();
+
+    if (!this.reduced) {
+      this.target = { x: 0, y: 0 };
+      this.cur = { x: 0, y: 0 };
+      this.target2 = { x: 0, y: 0 };
+      this.cur2 = { x: 0, y: 0 };
+      this.lastMove = null;
+      this.speeds = [];
+      this.lastStartle = 0;
+      this.startleKick = 0;
+      this._onMove = this.onMove.bind(this);
+      window.addEventListener('mousemove', this._onMove);
+      this.raf = requestAnimationFrame(this.tick);
+    }
+
+    if (this.props.loopAutoAdvance) {
+      this.autoTimer = setInterval(() => {
+        this.setState((s) => ({ activeStep: (s.activeStep + 1) % this.steps.length }));
+      }, 3600);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.io) this.io.disconnect();
+    if (this._onMove) window.removeEventListener('mousemove', this._onMove);
+    if (this._onScroll) {
+      window.removeEventListener('scroll', this._onScroll, { capture: true });
+      window.removeEventListener('resize', this._onScroll);
+    }
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.autoTimer) clearInterval(this.autoTimer);
+  }
+
+  measure() {
+    const a = this.wrapRef.current, b = this.wrap2Ref.current;
+    this.rects = {
+      a: a ? a.getBoundingClientRect() : null,
+      b: b ? b.getBoundingClientRect() : null,
+    };
+  }
+
+  updateWatcher() {
+    const el = this.watcherRef.current;
+    if (!el) return;
+    const hero = this.heroRef.current;
+    const past = hero
+      ? hero.getBoundingClientRect().bottom < window.innerHeight * 0.45
+      : window.scrollY > window.innerHeight * 0.7;
+    el.style.opacity = past ? '1' : '0';
+    el.style.transform = past ? 'translateY(0)' : 'translateY(18px)';
+  }
+
+  aimAt(rect, e) {
+    if (!rect) return { x: 0, y: 0 };
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const mag = Math.min(dist / 300, 1);
+    return { x: (dx / dist) * mag, y: (dy / dist) * mag };
+  }
+
+  onMove(e) {
+    this.target = this.aimAt(this.rects.a, e);
+    this.target2 = this.aimAt(this.rects.b, e);
+
+    const now = performance.now();
+    if (this.lastMove) {
+      const dt = now - this.lastMove.t;
+      if (dt > 0) {
+        const speed = Math.hypot(e.clientX - this.lastMove.x, e.clientY - this.lastMove.y) / dt;
+        this.speeds.push(speed);
+        if (this.speeds.length > 8) this.speeds.shift();
+        const avg = this.speeds.reduce((a, b) => a + b, 0) / this.speeds.length;
+        const startleOn = this.props.mascotStartleEnabled ?? true;
+        if (startleOn && speed > 2.2 && speed > avg * 2.8 && this.speeds.length >= 4 && now - this.lastStartle > 1600) {
+          this.lastStartle = now;
+          this.startleKick = this.target.x >= 0 ? -6 : 6;
+          this.triggerStartle();
+        }
+      }
+    }
+    this.lastMove = { x: e.clientX, y: e.clientY, t: now };
+  }
+
+  triggerStartle() {
+    [this.ringRef.current, this.ring2Ref.current].forEach((ring) => {
+      if (!ring) return;
+      ring.classList.remove('is-pulsing');
+      void ring.getBoundingClientRect();
+      ring.classList.add('is-pulsing');
+    });
+    [this.eyeRef.current, this.eye2Ref.current].forEach((eye) => {
+      if (!eye) return;
+      eye.classList.add('is-startled');
+      setTimeout(() => eye.classList.remove('is-startled'), 210);
+    });
+  }
+
+  tick = () => {
+    this.cur.x += (this.target.x - this.cur.x) * 0.13;
+    this.cur.y += (this.target.y - this.cur.y) * 0.13;
+    this.cur2.x += (this.target2.x - this.cur2.x) * 0.13;
+    this.cur2.y += (this.target2.y - this.cur2.y) * 0.13;
+    this.startleKick *= 0.82;
+    if (Math.abs(this.startleKick) < 0.05) this.startleKick = 0;
+
+    const p1 = this.pupilRef.current, h1 = this.headRef.current;
+    if (p1) p1.style.transform = `translate(${(this.cur.x * 16).toFixed(2)}px, ${(this.cur.y * 14).toFixed(2)}px)`;
+    if (h1) h1.style.transform = `rotate(${(this.cur.x * 2.4 + this.startleKick).toFixed(2)}deg)`;
+    const p2 = this.pupil2Ref.current, h2 = this.head2Ref.current;
+    if (p2) p2.style.transform = `translate(${(this.cur2.x * 16).toFixed(2)}px, ${(this.cur2.y * 14).toFixed(2)}px)`;
+    if (h2) h2.style.transform = `rotate(${(this.cur2.x * 2.4 + this.startleKick).toFixed(2)}deg)`;
+
+    this.raf = requestAnimationFrame(this.tick);
+  };
+
+  setStep(i) {
+    this.setState({ activeStep: i });
+    if (this.autoTimer) {
+      clearInterval(this.autoTimer);
+      this.autoTimer = setInterval(() => {
+        this.setState((s) => ({ activeStep: (s.activeStep + 1) % this.steps.length }));
+      }, 3600);
+    }
+  }
+  setPhone(flagged) { this.setState({ phoneFlagged: flagged }); }
+
+  revealStyle(key) {
+    const on = !!this.state.visible[key];
+    return `opacity:${on ? 1 : 0};transform:${on ? 'translateY(0)' : 'translateY(30px)'};transition:opacity .9s cubic-bezier(.16,.8,.24,1), transform .9s cubic-bezier(.16,.8,.24,1);`;
+  }
+
+  renderVals() {
+    const activeIdx = this.state.activeStep;
+    const active = this.steps[activeIdx];
+    const nodeStyle = 'cursor:pointer;display:flex;align-items:center;gap:14px;padding:0;background:transparent;border:none;font:inherit;text-align:left;';
+    const loopSteps = this.steps.map((s, i) => {
+      const on = i === activeIdx;
+      return {
+        key: s.key,
+        n: s.n,
+        title: s.title,
+        onSelect: () => this.setStep(i),
+        nodeStyle,
+        circleStyle: on
+          ? 'width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#7e01af;color:#fdf7ff;font-family:"IBM Plex Mono",monospace;font-size:13.5px;transition:all .35s ease;box-shadow:0 0 0 7px rgba(126,1,175,0.14);'
+          : 'width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px solid rgba(42,10,61,0.24);color:#665073;font-family:"IBM Plex Mono",monospace;font-size:13.5px;transition:all .35s ease;',
+        labelStyle: on
+          ? 'font-family:"Archivo",sans-serif;font-weight:900;font-stretch:110%;font-size:17px;letter-spacing:.01em;text-transform:uppercase;color:#2a0a3d;transition:color .3s ease;'
+          : 'font-family:"Archivo",sans-serif;font-weight:900;font-stretch:110%;font-size:17px;letter-spacing:.01em;text-transform:uppercase;color:#6b5478;transition:color .3s ease;',
+      };
+    });
+
+    const typicalOn = !this.state.phoneFlagged;
+    const btnBase = 'flex:1;padding:12px 10px;border-radius:999px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;cursor:pointer;transition:all .25s ease;';
+    const btnOn = btnBase + 'border:1px solid #7e01af;background:#7e01af;color:#fdf7ff;';
+    const btnOff = btnBase + 'border:1px solid transparent;background:transparent;color:#a99bb5;';
+
+    return {
+      problemStyle: this.revealStyle('problem'),
+      howStyle: this.revealStyle('how'),
+      actionStyle: this.revealStyle('action'),
+      infraStyle: this.revealStyle('infra'),
+      credStyle: this.revealStyle('cred'),
+      closeStyle: this.revealStyle('close'),
+
+      wrapRef: this.wrapRef, headRef: this.headRef, pupilRef: this.pupilRef,
+      ringRef: this.ringRef, eyeRef: this.eyeRef,
+      wrap2Ref: this.wrap2Ref, head2Ref: this.head2Ref, pupil2Ref: this.pupil2Ref,
+      ring2Ref: this.ring2Ref, eye2Ref: this.eye2Ref, watcherRef: this.watcherRef, heroRef: this.heroRef,
+      problemRef: this.problemRef, howRef: this.howRef, actionRef: this.actionRef,
+      infraRef: this.infraRef, credRef: this.credRef, closeRef: this.closeRef,
+
+      signalPills: (() => {
+        const on = !!this.state.visible.problem;
+        const base = 'display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;';
+        const items = [
+          { label: 'DEVICE', check: true }, { label: 'LOCATION', check: true },
+          { label: 'LOGIN', check: true }, { label: 'CARD', check: true },
+          { label: 'THE PERSON — NOT CHECKED', check: false },
+        ];
+        return items.map((it, i) => ({
+          label: it.label,
+          check: it.check,
+          style: base
+            + (it.check ? 'background:rgba(23,3,32,0.28);color:#f4e4fb;' : 'background:#170320;color:#e9b6ff;')
+            + `opacity:${on ? 1 : 0};transform:${on ? 'translateY(0)' : 'translateY(8px)'};`
+            + `transition:opacity .5s ease ${(i * 0.11).toFixed(2)}s, transform .5s ease ${(i * 0.11).toFixed(2)}s;`,
+        }));
+      })(),
+      loopSteps,
+      activeTitle: active.title,
+      activeBody: active.body,
+      showLearn: activeIdx === 0,
+      showCompare: activeIdx === 1,
+      showExplain: activeIdx === 2,
+      showDecide: activeIdx === 3,
+
+      isFlagged: this.state.phoneFlagged,
+      isTypical: typicalOn,
+      selectTypical: () => this.setPhone(false),
+      selectFlagged: () => this.setPhone(true),
+      typicalBtnStyle: typicalOn ? btnOn : btnOff,
+      flaggedBtnStyle: !typicalOn ? btnOn : btnOff,
+      phoneWidth: 320,
+      phoneHeight: 700,
+      showWatcher: this.props.showWatcher ?? true,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
