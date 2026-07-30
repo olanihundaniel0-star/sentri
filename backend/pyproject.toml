@@ -17,6 +17,12 @@ dependencies = [
     "python-dotenv==1.1.0",
     "httpx==0.28.1",
     "eth-account>=0.13.7",
+    # zoneinfo (sentri/canonical/timestamps.py builds ZoneInfo("Africa/Lagos")
+    # at import time) relies on the IANA tz database being present on the
+    # system. Not every deploy target ships one (already bit us on Windows
+    # locally) -- tzdata provides it as an installable fallback so this
+    # doesn't depend on what happens to be on the machine/container.
+    "tzdata>=2025.1",
 ]
 
 [project.optional-dependencies]

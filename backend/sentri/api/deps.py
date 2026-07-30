@@ -3,6 +3,16 @@
 Kept in their own module (rather than inline in main.py) so that route
 modules can import them without a circular import against the app factory,
 which in turn imports the route modules to wire them onto the app.
+
+BMONI_API_KEY, ANTHROPIC_API_KEY, and SENTRI_SEED_PATH are read here via
+os.environ.get() at call time, deliberately not through sentri.config (whose
+constants are frozen at that module's own import time, which happens well
+before these factories are ever called). Each factory is still only
+evaluated once thanks to @lru_cache, so this isn't about re-reading the
+environment on every request -- it's about not freezing the read before
+tests (or any other post-import env mutation) get a chance to set it. Tried
+routing these through sentri.config once; tests/test_deps.py is what caught
+it silently breaking monkeypatch-based overrides.
 """
 
 from __future__ import annotations
