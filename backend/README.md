@@ -1,5 +1,6 @@
 # Sentri
 
+![Sentri Banner](../docs/images/sentri-hero.png)
 
 ## What is Sentri
 
@@ -34,11 +35,13 @@ explanations are rendered by the deterministic template synthesizer
 LLM-synthesized explanations, with the template as an automatic fallback if
 Claude's output ever fails validation (`sentri/synthesizer/validator.py`).
 
-The server must be started from the `sentri-backend/` directory (or with it on
+The server must be started from the `backend/` directory (or with it on
 `PYTHONPATH`) — the default BMONI stub loads `seeds/data.json` relative to the
 current working directory.
 
 ## Architecture
+
+![6-Stage Pipeline & Signal Dimensions](../docs/images/sentri-architecture.png)
 
 Sentri is organized into layered modules:
 

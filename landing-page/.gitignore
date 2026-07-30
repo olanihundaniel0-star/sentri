@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build artifacts & outputs
+dist
+dist-ssr
+.vite
+build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment & Editor
+.env*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?

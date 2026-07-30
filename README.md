@@ -1,5 +1,6 @@
 # Sentri
 
+![Sentri Landing Banner](docs/images/sentri-hero.png)
 
 **Sentri is an AI security coprocessor for financial transactions.**
 
@@ -69,7 +70,7 @@ development**. When they are absent, Sentri falls back gracefully:
 | `ANTHROPIC_API_KEY` | Explanations via Claude (claude-haiku-4-5-20251001) | Explanations via deterministic template renderer |
 | `BMONI_API_KEY` | Live BMONI sandbox (`https://embedded-dev.bmoni.com`) | In-memory stub backed by `seeds/data.json` |
 
-The server must be started from the `sentri-backend/` directory (or with it
+The server must be started from the `backend/` directory (or with it
 on `PYTHONPATH`) because the default stub loads `seeds/data.json` relative to
 the package root.
 
@@ -78,6 +79,8 @@ the package root.
 ## Architecture
 
 ### System overview
+
+![Authorized by the Victim UI](docs/images/sentri-problem.png)
 
 ```mermaid
 graph LR
@@ -105,6 +108,8 @@ graph LR
 ```
 
 ### Request pipeline
+
+![Behavioral Baseline Learning](docs/images/sentri-how-it-works.png)
 
 Every call to `POST /evaluate` passes through a strict, ordered pipeline:
 
@@ -360,7 +365,9 @@ inspecting what behavioral profile the scorer sees. Feature-flagged via
 
 ---
 
-## Deviation signals
+### Deviation signals
+
+![6-Stage Pipeline & Signal Dimensions](docs/images/sentri-architecture.png)
 
 Sentri computes eight deviation signals and assembles them into a
 `DeviationVector`. The signals are grouped into four dimensions:
@@ -405,6 +412,8 @@ non-structural signal (amount, temporal, or categorical) also fires.
 
 ## Synthesizer tiers
 
+![In-App Intervention UI](docs/images/sentri-intervention.png)
+
 Sentri uses a two-tier explanation system:
 
 **Tier 1 — Deterministic scoring** (`sentri/scorer/`)  
@@ -436,6 +445,8 @@ or recipient names.
 ---
 
 ## BMONI integration
+
+![Embedded Infrastructure Integration](docs/images/sentri-infrastructure.png)
 
 Sentri talks to BMONI exclusively through the `BMONIClient` Protocol defined
 in `sentri/bmoni/protocol.py`:

@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #120a18;
+  color: #f3ecf7;
+  font-family: 'IBM Plex Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: #c65fe8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #e9b6ff;
+}
+
+::selection {
+  background: #7e01af;
+  color: #fff;
+}
+
+/* Animations */
+@keyframes sentri-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sentri-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-22px);
+  }
+}
+
+@keyframes sentri-blink {
+  0%, 94%, 100% {
+    transform: scaleY(0);
+  }
+  97% {
+    transform: scaleY(1.7);
+  }
+}
+
+.sentri-eyelid {
+  animation: sentri-blink 5.4s ease-in-out infinite;
+}
+
+@keyframes sentri-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.34);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+  }
+}
+
+.sentri-breathe {
+  animation: sentri-breathe 2.8s ease-out infinite;
+}
+
+@keyframes sentri-ring-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.sentri-ring.is-pulsing {
+  animation: sentri-ring-pulse 0.8s ease-out;
+}
+
+.sentri-eye {
+  transition: transform 0.18s ease;
+}
+
+.sentri-eye.is-startled {
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .sentri-eyelid,
+  .sentri-ring.is-pulsing,
+  .sentri-breathe {
+    animation: none !important;
+  }
+  .sentri-hero-in,
+  .sentri-shard {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
