@@ -71,7 +71,7 @@ from eth_account import Account
 from eth_account.signers.local import LocalAccount
 
 from sentri.canonical.timestamps import ingest_timestamp
-from sentri.config import Config
+from sentri.config import BMONI_API_KEY, BMONI_BASE_URL
 from sentri.models.profile import SocialGraph
 from sentri.models.transaction import Transaction
 
@@ -135,7 +135,7 @@ class BMONIClient:
             self._client = http_client
             return
 
-        resolved_key = api_key if api_key is not None else Config.BMONI_API_KEY
+        resolved_key = api_key if api_key is not None else BMONI_API_KEY
         if not resolved_key:
             raise ValueError(
                 "BMONI_API_KEY is required to construct a real BMONIClient "
@@ -143,7 +143,7 @@ class BMONIClient:
             )
 
         self._client = httpx.AsyncClient(
-            base_url=base_url or Config.BMONI_BASE_URL,
+            base_url=base_url or BMONI_BASE_URL,
             headers={"x-api-key": resolved_key, "Content-Type": "application/json"},
         )
 

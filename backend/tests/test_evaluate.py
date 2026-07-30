@@ -6,15 +6,10 @@ from datetime import datetime, timezone
 from math import isclose
 
 import numpy as np
-from sentri.api.evaluate import _build_facts, format_naira_display
+from sentri.api.evaluate import _build_facts
 from sentri.models.deviation import DeviationVector, TriggerReason
 from sentri.models.profile import RecipientRollup, UserProfile
 from sentri.models.transaction import Transaction, TransactionEvent
-
-
-def test_format_naira_display_preserves_kobo_precision() -> None:
-    assert format_naira_display(45_000_000) == "₦450,000"
-    assert format_naira_display(45_012_375) == "₦450,123.75"
 
 
 def test_build_facts_emits_kobo_and_display_amounts() -> None:

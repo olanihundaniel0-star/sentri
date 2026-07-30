@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 import anthropic
 
-from sentri.config import Config
+from sentri.config import LLM_MAX_TOKENS, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from sentri.models.deviation import DeviationVector, TriggerReason
 from sentri.synthesizer.prompt import SYSTEM_PROMPT, build_llm_input
 from sentri.synthesizer.template import template_explanation
@@ -36,7 +36,7 @@ class ClaudeSynthesizer:
         try:
             output = await asyncio.wait_for(
                 asyncio.to_thread(self._call_claude, payload),
-                timeout=Config.LLM_TIMEOUT_SECONDS,
+                timeout=LLM_TIMEOUT_SECONDS,
             )
 
             if output is None:
@@ -57,9 +57,9 @@ class ClaudeSynthesizer:
             return template_explanation(triggered, facts, language), "template"
 
     def _call_claude(self, payload: dict[str, Any]) -> Optional[str]:
-        message = self._client.with_options(timeout=Config.LLM_TIMEOUT_SECONDS).messages.create(
-            model=Config.LLM_MODEL,
-            max_tokens=Config.LLM_MAX_TOKENS,
+        message = self._client.with_options(timeout=LLM_TIMEOUT_SECONDS).messages.create(
+            model=LLM_MODEL,
+            max_tokens=LLM_MAX_TOKENS,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": json.dumps(payload)}],
         )

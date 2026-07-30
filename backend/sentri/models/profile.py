@@ -45,3 +45,8 @@ class UserProfile:
     hour_histogram: tuple[int, ...]
     currencies_seen: frozenset[str]
     social_graph: Optional[SocialGraph] = None
+
+
+def all_transactions(profile: UserProfile) -> list[Transaction]:
+    """Every transaction across all of a profile's recipients."""
+    return [tx for rollup in profile.recipients.values() for tx in rollup.transactions]

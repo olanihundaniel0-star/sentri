@@ -7,7 +7,12 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from sentri.canonical.numeric import canonicalize_money, canonicalize_time, extract_numeric_tokens
+from sentri.canonical.numeric import (
+    canonicalize_money,
+    canonicalize_time,
+    extract_numeric_tokens,
+    format_naira_display,
+)
 from sentri.canonical.timestamps import ingest_timestamp, to_wat
 
 _WAT = ZoneInfo("Africa/Lagos")
@@ -80,6 +85,12 @@ class TestCanonicalizeMoney:
     )
     def test_returns_none_for_word_form_numbers(self, raw: str) -> None:
         assert canonicalize_money(raw) is None
+
+
+class TestFormatNairaDisplay:
+    def test_preserves_kobo_precision(self) -> None:
+        assert format_naira_display(45_000_000) == "₦450,000"
+        assert format_naira_display(45_012_375) == "₦450,123.75"
 
 
 class TestCanonicalizeTime:

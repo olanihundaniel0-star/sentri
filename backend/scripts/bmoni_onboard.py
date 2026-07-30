@@ -36,7 +36,7 @@ from eth_account import Account
 from eth_account.messages import encode_defunct
 from eth_account.signers.local import LocalAccount
 
-from sentri.config import Config
+from sentri.config import BMONI_API_KEY, BMONI_BASE_URL
 
 _TEST_BVN = "22222222222"
 _WALLET_CURRENCY = "CNGN"
@@ -46,12 +46,12 @@ _KEYS_DIR = Path(__file__).resolve().parent.parent / ".bmoni_keys"
 
 
 def _client() -> httpx.Client:
-    if not Config.BMONI_API_KEY:
+    if not BMONI_API_KEY:
         print("BMONI_API_KEY is not set in the environment", file=sys.stderr)
         raise SystemExit(1)
     return httpx.Client(
-        base_url=Config.BMONI_BASE_URL,
-        headers={"x-api-key": Config.BMONI_API_KEY, "Content-Type": "application/json"},
+        base_url=BMONI_BASE_URL,
+        headers={"x-api-key": BMONI_API_KEY, "Content-Type": "application/json"},
         timeout=30.0,
     )
 

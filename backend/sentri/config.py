@@ -54,40 +54,21 @@ def _env_thresholds(default: dict[str, float | bool]) -> dict[str, float | bool]
     return merged
 
 
-class Config:
-    """Runtime configuration loaded from environment variables with sensible defaults."""
-
-    FAMILIARITY_DECAY_LAMBDA: float = _env_float("FAMILIARITY_DECAY_LAMBDA", 0.01)
-    FAMILIARITY_VOLUME_FLOOR_RATIO: float = _env_float("FAMILIARITY_VOLUME_FLOOR_RATIO", 0.3)
-    Z_SCORE_MIN_SAMPLES: int = _env_int("Z_SCORE_MIN_SAMPLES", 3)
-    THRESHOLDS: dict[str, float | bool] = _env_thresholds(_DEFAULT_THRESHOLDS)
-    TIMEZONE: str = _env_str("TIMEZONE", "Africa/Lagos")
-    LLM_MODEL: str = _env_str("LLM_MODEL", "claude-haiku-4-5-20251001")
-    LLM_MAX_TOKENS: int = _env_int("LLM_MAX_TOKENS", 300)
-    LLM_TIMEOUT_SECONDS: float = _env_float("LLM_TIMEOUT_SECONDS", 5.0)
-    SUPPORTED_LANGUAGES: list[str] = _env_str_list("SUPPORTED_LANGUAGES", ["en"])
-    DEFAULT_LANGUAGE: str = _env_str("DEFAULT_LANGUAGE", "en")
-    DEBUG_ENDPOINTS_ENABLED: bool = _env_bool("DEBUG_ENDPOINTS_ENABLED", True)
-    # Sandbox base URL already includes /v1 on every documented path; adapters
-    # must not append another /v1 prefix. No default for BMONI_API_KEY: it's
-    # only required once something actually constructs a real BMONIClient
-    # (sentri.bmoni.client), not at import time, so the rest of the app keeps
-    # working without it configured.
-    BMONI_BASE_URL: str = _env_str("BMONI_BASE_URL", "https://embedded-dev.bmoni.com")
-    BMONI_API_KEY: Optional[str] = os.getenv("BMONI_API_KEY")
-
-
-# Module-level aliases for convenient imports.
-FAMILIARITY_DECAY_LAMBDA = Config.FAMILIARITY_DECAY_LAMBDA
-FAMILIARITY_VOLUME_FLOOR_RATIO = Config.FAMILIARITY_VOLUME_FLOOR_RATIO
-Z_SCORE_MIN_SAMPLES = Config.Z_SCORE_MIN_SAMPLES
-THRESHOLDS = Config.THRESHOLDS
-TIMEZONE = Config.TIMEZONE
-LLM_MODEL = Config.LLM_MODEL
-LLM_MAX_TOKENS = Config.LLM_MAX_TOKENS
-LLM_TIMEOUT_SECONDS = Config.LLM_TIMEOUT_SECONDS
-SUPPORTED_LANGUAGES = Config.SUPPORTED_LANGUAGES
-DEFAULT_LANGUAGE = Config.DEFAULT_LANGUAGE
-DEBUG_ENDPOINTS_ENABLED = Config.DEBUG_ENDPOINTS_ENABLED
-BMONI_BASE_URL = Config.BMONI_BASE_URL
-BMONI_API_KEY = Config.BMONI_API_KEY
+FAMILIARITY_DECAY_LAMBDA: float = _env_float("FAMILIARITY_DECAY_LAMBDA", 0.01)
+FAMILIARITY_VOLUME_FLOOR_RATIO: float = _env_float("FAMILIARITY_VOLUME_FLOOR_RATIO", 0.3)
+Z_SCORE_MIN_SAMPLES: int = _env_int("Z_SCORE_MIN_SAMPLES", 3)
+THRESHOLDS: dict[str, float | bool] = _env_thresholds(_DEFAULT_THRESHOLDS)
+TIMEZONE: str = _env_str("TIMEZONE", "Africa/Lagos")
+LLM_MODEL: str = _env_str("LLM_MODEL", "claude-haiku-4-5-20251001")
+LLM_MAX_TOKENS: int = _env_int("LLM_MAX_TOKENS", 300)
+LLM_TIMEOUT_SECONDS: float = _env_float("LLM_TIMEOUT_SECONDS", 5.0)
+SUPPORTED_LANGUAGES: list[str] = _env_str_list("SUPPORTED_LANGUAGES", ["en"])
+DEFAULT_LANGUAGE: str = _env_str("DEFAULT_LANGUAGE", "en")
+DEBUG_ENDPOINTS_ENABLED: bool = _env_bool("DEBUG_ENDPOINTS_ENABLED", True)
+# Sandbox base URL already includes /v1 on every documented path; adapters
+# must not append another /v1 prefix. No default for BMONI_API_KEY: it's
+# only required once something actually constructs a real BMONIClient
+# (sentri.bmoni.client), not at import time, so the rest of the app keeps
+# working without it configured.
+BMONI_BASE_URL: str = _env_str("BMONI_BASE_URL", "https://embedded-dev.bmoni.com")
+BMONI_API_KEY: Optional[str] = os.getenv("BMONI_API_KEY")

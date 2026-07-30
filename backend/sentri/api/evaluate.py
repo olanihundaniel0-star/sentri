@@ -14,22 +14,20 @@ from fastapi import APIRouter, Depends
 
 from sentri.api.deps import get_bmoni_client, get_synthesizer
 from sentri.bmoni.protocol import BMONIClient
+from sentri.canonical.numeric import format_naira_display
 from sentri.canonical.timestamps import ingest_timestamp, to_wat
 from sentri.config import DEFAULT_LANGUAGE, THRESHOLDS
 from sentri.graph.builder import build_profile
 from sentri.models.deviation import DeviationVector, TriggerReason
-from sentri.models.profile import UserProfile
+from sentri.models.profile import UserProfile, all_transactions
 from sentri.models.transaction import Transaction, TransactionEvent
 from sentri.models.verdict import Verdict, VerdictKind
+from sentri.scorer.amount import MIN_WINDOW_SAMPLES, recent_prior_amount_windows
 from sentri.scorer.vector import build_vector, fires, should_intervene
 from sentri.synthesizer.protocol import ExplanationSynthesizer
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-_DRIFT_RECENT_WINDOW_DAYS = 30
-_DRIFT_PRIOR_WINDOW_END_DAYS = 90
-_DRIFT_MIN_WINDOW_SAMPLES = 3
 
 
 def _exclude_current_event(
@@ -71,17 +69,6 @@ def _format_time_of_day(dt: datetime) -> str:
     return f"{display_hour}:{dt.minute:02d}{period}"
 
 
-def format_naira_display(kobo: int) -> str:
-    """Format integer kobo as a naira display string without rounding."""
-    sign = "-" if kobo < 0 else ""
-    absolute_kobo = abs(kobo)
-    naira, remainder_kobo = divmod(absolute_kobo, 100)
-    display = f"{sign}₦{naira:,}"
-    if remainder_kobo:
-        display = f"{display}.{remainder_kobo:02d}"
-    return display
-
-
 def _derive_event_id(event: TransactionEvent) -> str:
     """Deterministic ID from the fields that identify the transaction attempt.
 
@@ -96,25 +83,6 @@ def _derive_event_id(event: TransactionEvent) -> str:
 def _add_kobo_fact(facts: dict[str, Any], base_name: str, kobo: int) -> None:
     facts[f"{base_name}_kobo"] = kobo
     facts[f"{base_name}_display"] = format_naira_display(kobo)
-
-
-def _all_transactions(profile: UserProfile) -> list[Transaction]:
-    return [tx for rollup in profile.recipients.values() for tx in rollup.transactions]
-
-
-def _drift_windows(profile: UserProfile, event: TransactionEvent) -> tuple[list[int], list[int]]:
-    reference = ingest_timestamp(event.timestamp)
-    recent: list[int] = []
-    prior: list[int] = []
-
-    for tx in _all_transactions(profile):
-        age_days = (reference - tx.timestamp).total_seconds() / 86400.0
-        if 0 <= age_days <= _DRIFT_RECENT_WINDOW_DAYS:
-            recent.append(tx.amount_kobo)
-        elif _DRIFT_RECENT_WINDOW_DAYS < age_days <= _DRIFT_PRIOR_WINDOW_END_DAYS:
-            prior.append(tx.amount_kobo)
-
-    return recent, prior
 
 
 def _build_facts(
@@ -135,9 +103,7 @@ def _build_facts(
         _add_kobo_fact(facts, "min_amount", rollup.min_kobo)
         _add_kobo_fact(facts, "max_amount", rollup.max_kobo)
     else:
-        all_amounts = [
-            tx.amount_kobo for other in profile.recipients.values() for tx in other.transactions
-        ]
+        all_amounts = [tx.amount_kobo for tx in all_transactions(profile)]
         if all_amounts:
             _add_kobo_fact(facts, "min_amount", min(all_amounts))
             _add_kobo_fact(facts, "max_amount", max(all_amounts))
@@ -145,8 +111,8 @@ def _build_facts(
     # Drift facts are only useful when AMOUNT_DRIFT fired; new-recipient and
     # under-sampled cases deliberately carry no drift keys.
     if TriggerReason.AMOUNT_DRIFT in triggered and vector.amount_drift_ratio is not None:
-        recent, prior = _drift_windows(profile, event)
-        if len(recent) >= _DRIFT_MIN_WINDOW_SAMPLES and len(prior) >= _DRIFT_MIN_WINDOW_SAMPLES:
+        recent, prior = recent_prior_amount_windows(profile, event)
+        if len(recent) >= MIN_WINDOW_SAMPLES and len(prior) >= MIN_WINDOW_SAMPLES:
             prior_mean_kobo = round(sum(prior) / len(prior))
             recent_mean_kobo = round(sum(recent) / len(recent))
             _add_kobo_fact(facts, "prior_mean", prior_mean_kobo)

@@ -45,6 +45,17 @@ def canonicalize_money(value: Union[str, int, float]) -> Optional[int]:
     return int(amount_naira * 100)
 
 
+def format_naira_display(kobo: int) -> str:
+    """Format integer kobo as a naira display string without rounding."""
+    sign = "-" if kobo < 0 else ""
+    absolute_kobo = abs(kobo)
+    naira, remainder_kobo = divmod(absolute_kobo, 100)
+    display = f"{sign}₦{naira:,}"
+    if remainder_kobo:
+        display = f"{display}.{remainder_kobo:02d}"
+    return display
+
+
 def canonicalize_time(value: str) -> Optional[int]:
     """Parse a clock time and return minutes since midnight."""
     text = value.strip()
