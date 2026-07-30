@@ -66,32 +66,24 @@ uvicorn sentri.api.main:app --reload
 Both `ANTHROPIC_API_KEY` and `BMONI_API_KEY` are **optional for local
 development**. When they are absent, Sentri falls back gracefully:
 
-<<<<<<< HEAD:sentri-backend/README.md
 | Variable | Present | Absent |
 |----------|---------|--------|
 | `ANTHROPIC_API_KEY` | Explanations via Claude (claude-haiku-4-5-20251001) | Explanations via deterministic template renderer |
 | `BMONI_API_KEY` | Live BMONI sandbox (`https://embedded-dev.bmoni.com`) | In-memory stub backed by `seeds/data.json` |
 
-The server must be started from the `sentri-backend/` directory (or with it
-on `PYTHONPATH`) because the default stub loads `seeds/data.json` relative to
-the package root.
+The server must be started from the `backend/` directory (or with it on
+`PYTHONPATH`) — the default BMONI stub loads `seeds/data.json` relative to the
+current working directory.
 
 ---
 
 ## Architecture
 
 ### System overview
-=======
-The server must be started from the `backend/` directory (or with it on
-`PYTHONPATH`) — the default BMONI stub loads `seeds/data.json` relative to the
-current working directory.
-
-## Architecture
 
 ![6-Stage Pipeline & Signal Dimensions](../docs/images/sentri-architecture.png)
 
 Sentri is organized into layered modules:
->>>>>>> main:backend/README.md
 
 ```mermaid
 graph LR

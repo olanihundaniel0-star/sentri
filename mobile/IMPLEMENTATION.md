@@ -14,7 +14,7 @@ A minimal, unstyled Flutter app that talks to the Sentri backend end-to-end, sat
 ### ✅ Sentri's check runs before BMONI
 - **Requirement**: Sentri's check runs and completes before any transfer reaches BMONI. No code path where the app calls a BMONI transfer endpoint directly.
 - **Implementation**: The backend's `POST /transfer` runs the full `evaluate()` pipeline (Tier 1 + Tier 2) internally before constructing any BMONI withdrawal proposal. If `should_intervene()` fires, the transfer is held without ever touching BMONI. Only `POST /transfer/{id}/confirm` or a silent-pass execute path actually call `bmoni_client.transfer()`.
-- **Verification**: Check `sentri-backend/sentri/api/transfer.py` lines 126-135 — `evaluate()` is called first, and only if `verdict.kind == VerdictKind.INTERVENE` is the transfer held. Otherwise it executes via `_execute()` which calls the real `BMONIClient.transfer()`.
+- **Verification**: Check `backend/sentri/api/transfer.py` lines 126-135 — `evaluate()` is called first, and only if `verdict.kind == VerdictKind.INTERVENE` is the transfer held. Otherwise it executes via `_execute()` which calls the real `BMONIClient.transfer()`.
 
 ### ✅ No visual design work
 - **Requirement**: Default Material widgets, default theme, zero custom tokens. This screen layer gets replaced once the design lands.
@@ -105,10 +105,10 @@ Maps backend's `TransferResponse`:
 
 ## Testing checklist
 
-1. **Start backend**: `cd sentri-backend && uvicorn sentri.api.main:app --reload`
+1. **Start backend**: `cd backend && uvicorn sentri.api.main:app --reload`
 2. **Verify bridged identities**: Check `seeds/identity_bridge.json` has real `bmoni_user_id` values for `user_001` and `user_002` (not `REPLACE_*` placeholders)
 3. **Verify signing keys**: Env vars `BMONI_SIGNING_KEY__user_001` and `BMONI_SIGNING_KEY__user_002` are set
-4. **Run Flutter**: `cd sentri-flutter && flutter run`
+4. **Run Flutter**: `cd mobile && flutter run`
 5. **Test silent pass** (user_002, normal cohort):
    - Select `user_002`
    - Tap send icon
@@ -128,7 +128,7 @@ Maps backend's `TransferResponse`:
 ## Files created
 
 ```
-sentri-flutter/
+mobile/
 ├── README.md                                         Setup + usage instructions
 ├── IMPLEMENTATION.md                                 This file
 ├── pubspec.yaml                                      Flutter project config

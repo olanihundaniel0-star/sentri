@@ -36,7 +36,7 @@ Minimal, unstyled Flutter app that talks to the Sentri backend end-to-end. Zero 
 ### Install dependencies
 
 ```bash
-cd sentri-flutter
+cd mobile
 flutter pub get
 ```
 
