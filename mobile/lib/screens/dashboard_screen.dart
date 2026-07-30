@@ -785,10 +785,7 @@ class _SwitchRow extends StatelessWidget {
           if (subtitle != null)
             Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
         ])),
-        Switch(
-            value: value,
-            activeColor: SentriColors.brand,
-            onChanged: onChanged),
+        SentriSwitch(value: value, onChanged: onChanged),
       ]),
     );
   }
@@ -944,11 +941,115 @@ class _NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _PushedListScreen(title: 'Notifications', children: const [
-      FactRow(
-          'Sentri looked at a transfer. You have never sent to Marcus Webb before. You chose to review it.'),
-      FactRow('Money in from Ademide Johnson: +₦245.00'),
-      FactRow('July statement is ready.'),
+      _NotificationRow(
+        unread: true,
+        title: 'Sentri looked at a transfer',
+        body:
+            "You've never sent to Marcus Webb before. You chose to review it.",
+        timestamp: '2 hours ago',
+      ),
+      SizedBox(height: 11),
+      _NotificationRow(
+        markerColor: SentriColors.green,
+        markerTint: SentriColors.greenTint,
+        title: 'Money in from Ademide Johnson',
+        amount: '+₦245.00',
+        timestamp: 'Yesterday',
+      ),
+      SizedBox(height: 11),
+      _NotificationRow(
+        markerColor: SentriColors.amber,
+        markerTint: SentriColors.amberTint,
+        title: 'Your July statement is ready',
+        timestamp: 'Jul 28',
+      ),
     ]);
+  }
+}
+
+class _NotificationRow extends StatelessWidget {
+  final bool unread;
+  final String title;
+  final String? body;
+  final String? amount;
+  final String timestamp;
+  final Color markerColor;
+  final Color markerTint;
+
+  const _NotificationRow({
+    this.unread = false,
+    required this.title,
+    this.body,
+    this.amount,
+    required this.timestamp,
+    this.markerColor = SentriColors.brand,
+    this.markerTint = SentriColors.surface2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+      decoration: BoxDecoration(
+        color: unread ? const Color(0xFFFAF4FD) : SentriColors.surface2,
+        borderRadius: BorderRadius.circular(16),
+        border: unread ? Border.all(color: SentriColors.brandTint2) : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (unread)
+            const FactMarker()
+          else
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(color: markerTint, shape: BoxShape.circle),
+              child: Center(
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration:
+                      BoxDecoration(color: markerColor, shape: BoxShape.circle),
+                ),
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: SentriColors.ink,
+                        fontWeight: unread ? FontWeight.w600 : FontWeight.w500,
+                        fontSize: 14.5)),
+                if (body != null) ...[
+                  const SizedBox(height: 3),
+                  Text(body!,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: 13, height: 1.5)),
+                ],
+                if (amount != null) ...[
+                  const SizedBox(height: 3),
+                  Text(amount!,
+                      style: monoStyle(
+                          size: 13,
+                          color: SentriColors.inkSecondary,
+                          weight: FontWeight.w400)),
+                ],
+                const SizedBox(height: 6),
+                Text(timestamp,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: SentriColors.muted3, fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -407,7 +407,8 @@ class _SentriSheet extends StatelessWidget {
                 const SizedBox(
                     width: 260,
                     height: 260,
-                    child: SentriMascot(size: 150, rings: true)),
+                    child: SentriMascot(
+                        size: 260, mascotSize: 126, checking: true)),
                 Text("You've never sent to ${recipient.name} before.",
                     textAlign: TextAlign.center,
                     style: Theme.of(context)

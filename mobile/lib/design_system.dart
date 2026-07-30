@@ -133,6 +133,8 @@ ThemeData buildSentriTheme() {
       style: ElevatedButton.styleFrom(
         backgroundColor: SentriColors.brand,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: const Color(0xFFE2E2E8),
+        disabledForegroundColor: SentriColors.muted3,
         minimumSize: const Size(double.infinity, 54),
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -142,14 +144,22 @@ ThemeData buildSentriTheme() {
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: SentriColors.brand,
-        side: const BorderSide(color: SentriColors.brandBorder, width: 1.5),
-        minimumSize: const Size(double.infinity, 54),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(SentriRadii.card)),
-        textStyle:
-            GoogleFonts.outfit(fontSize: 15.5, fontWeight: FontWeight.w600),
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.disabled)
+                ? SentriColors.muted3
+                : SentriColors.brand),
+        side: WidgetStateProperty.resolveWith((states) => BorderSide(
+            color: states.contains(WidgetState.disabled)
+                ? const Color(0xFFE2E2E8)
+                : SentriColors.brandBorder,
+            width: 1.5)),
+        minimumSize:
+            const WidgetStatePropertyAll(Size(double.infinity, 54)),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SentriRadii.card))),
+        textStyle: WidgetStatePropertyAll(
+            GoogleFonts.outfit(fontSize: 15.5, fontWeight: FontWeight.w600)),
       ),
     ),
     dividerTheme:

@@ -4,15 +4,30 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class SentriMascot extends StatefulWidget {
+  /// Size of the backdrop stage (rings / glow / scan arc live inside this box).
   final double size;
+
+  /// Size of the mascot orb itself. Defaults to [size] (used by the splash,
+  /// where the orb fills its stage). The Sentri-check sheet uses a smaller
+  /// orb inside a larger stage, so it passes both.
+  final double? mascotSize;
   final bool interactive;
+
+  /// Idle/splash backdrop: two staggered soft rings + a breathing glow.
   final bool rings;
+
+  /// "Sentri in action" backdrop: three tightly-staggered brand-colour
+  /// sonar rings, a rotating scan arc, and a static glow — the distinct
+  /// treatment for the moment Sentri is actively checking a transfer.
+  final bool checking;
 
   const SentriMascot({
     super.key,
     this.size = 212,
+    this.mascotSize,
     this.interactive = false,
     this.rings = true,
+    this.checking = false,
   });
 
   @override
@@ -60,6 +75,7 @@ class _SentriMascotState extends State<SentriMascot>
 
   @override
   Widget build(BuildContext context) {
+    final svgSize = widget.mascotSize ?? widget.size;
     return Listener(
       onPointerHover: (event) => _track(event.localPosition),
       onPointerMove: (event) => _track(event.localPosition),
@@ -69,34 +85,8 @@ class _SentriMascotState extends State<SentriMascot>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (widget.rings) ...[
-              _PulseRing(size: widget.size * 1.12, delay: Duration.zero),
-              _PulseRing(
-                  size: widget.size * 1.12,
-                  delay: const Duration(milliseconds: 1500)),
-              AnimatedBuilder(
-                animation: _float,
-                builder: (_, __) {
-                  final t = math.sin(_float.value * math.pi * 2);
-                  return Transform.scale(
-                    scale: 1 + t * 0.03,
-                    child: Container(
-                      width: widget.size * 0.98,
-                      height: widget.size * 0.98,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFFA83CD8).withOpacity(0.24),
-                            const Color(0x00A83CD8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+            if (widget.checking) ..._checkingBackdrop(),
+            if (widget.rings && !widget.checking) ..._idleBackdrop(),
             AnimatedBuilder(
               animation: Listenable.merge([_float, _blink]),
               builder: (_, __) {
@@ -112,7 +102,7 @@ class _SentriMascotState extends State<SentriMascot>
                   child: Transform.rotate(
                     angle: _aim.dx * math.pi / 112,
                     child: CustomPaint(
-                      size: Size.square(widget.size),
+                      size: Size.square(svgSize),
                       painter: _MascotPainter(
                         irisOffset: _aim * 5,
                         pupilOffset: _aim * 8,
@@ -129,13 +119,84 @@ class _SentriMascotState extends State<SentriMascot>
       ),
     );
   }
+
+  List<Widget> _idleBackdrop() {
+    return [
+      _PulseRing(size: widget.size * 1.123, delay: Duration.zero),
+      _PulseRing(
+          size: widget.size * 1.123,
+          delay: const Duration(milliseconds: 1800)),
+      AnimatedBuilder(
+        animation: _float,
+        builder: (_, __) {
+          final t = math.sin(_float.value * math.pi * 2);
+          return Transform.scale(
+            scale: 1 + t * 0.03,
+            child: Container(
+              width: widget.size * 0.99,
+              height: widget.size * 0.99,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFA83CD8).withOpacity(0.24),
+                    const Color(0x00A83CD8),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  List<Widget> _checkingBackdrop() {
+    final stage = widget.size;
+    return [
+      Container(
+        width: stage,
+        height: stage,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              const Color(0xFF7E01AF).withOpacity(0.10),
+              const Color(0x007E01AF),
+            ],
+          ),
+        ),
+      ),
+      _ScanArc(size: stage * (220 / 260)),
+      for (final delaySeconds in const [0, 1, 2])
+        _PulseRing(
+          size: stage * (190 / 260),
+          delay: Duration(seconds: delaySeconds),
+          duration: const Duration(seconds: 3),
+          color: const Color(0xFF7E01AF),
+          borderWidth: 1.5,
+          maxOpacity: 0.45,
+        ),
+    ];
+  }
 }
 
 class _PulseRing extends StatefulWidget {
   final double size;
   final Duration delay;
+  final Duration duration;
+  final Color color;
+  final double borderWidth;
+  final double maxOpacity;
 
-  const _PulseRing({required this.size, required this.delay});
+  const _PulseRing({
+    required this.size,
+    required this.delay,
+    this.duration = const Duration(milliseconds: 3600),
+    this.color = const Color(0xFFA83CD8),
+    this.borderWidth = 1,
+    this.maxOpacity = 0.38,
+  });
 
   @override
   State<_PulseRing> createState() => _PulseRingState();
@@ -149,8 +210,7 @@ class _PulseRingState extends State<_PulseRing>
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 3));
+    _controller = AnimationController(vsync: this, duration: widget.duration);
     _startTimer = Timer(widget.delay, () {
       if (mounted) _controller.repeat();
     });
@@ -169,8 +229,9 @@ class _PulseRingState extends State<_PulseRing>
       animation: _controller,
       builder: (_, __) {
         final scale = 0.6 + _controller.value * 0.9;
-        final opacity =
-            (0.6 * (1 - _controller.value * 1.4)).clamp(0.0, 0.6).toDouble();
+        final opacity = (widget.maxOpacity * (1 - _controller.value * 1.4))
+            .clamp(0.0, widget.maxOpacity)
+            .toDouble();
         return Transform.scale(
           scale: scale,
           child: Opacity(
@@ -181,7 +242,8 @@ class _PulseRingState extends State<_PulseRing>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: const Color(0xFFA83CD8).withOpacity(0.38)),
+                    color: widget.color.withOpacity(0.7),
+                    width: widget.borderWidth),
               ),
             ),
           ),
@@ -189,6 +251,84 @@ class _PulseRingState extends State<_PulseRing>
       },
     );
   }
+}
+
+/// The rotating "scan arc" shown behind the mascot while Sentri is actively
+/// checking a transfer — a thin ring with one brighter leading edge,
+/// spinning slowly (7s/turn), distinct from the idle splash rings.
+class _ScanArc extends StatefulWidget {
+  final double size;
+
+  const _ScanArc({required this.size});
+
+  @override
+  State<_ScanArc> createState() => _ScanArcState();
+}
+
+class _ScanArcState extends State<_ScanArc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 7))
+          ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) => Transform.rotate(
+        angle: _controller.value * 2 * math.pi,
+        child: CustomPaint(
+          size: Size.square(widget.size),
+          painter: _ScanArcPainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScanArcPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.width / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = const Color(0xFF7E01AF).withOpacity(0.16),
+    );
+
+    canvas.drawArc(
+      rect,
+      -math.pi / 2 - 0.45,
+      0.9,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFF7E01AF).withOpacity(0.4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ScanArcPainter oldDelegate) => false;
 }
 
 class _MascotPainter extends CustomPainter {

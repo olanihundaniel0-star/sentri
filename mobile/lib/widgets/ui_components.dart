@@ -172,6 +172,50 @@ class RecipientAvatar extends StatelessWidget {
   }
 }
 
+class SentriSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const SentriSwitch({super.key, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        width: 46,
+        height: 27,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: value ? SentriColors.brand : const Color(0xFFE2E2E8),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 21,
+            height: 21,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: Color(0x38000000),
+                    offset: Offset(0, 1),
+                    blurRadius: 3),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PrimaryScaffoldPadding extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
