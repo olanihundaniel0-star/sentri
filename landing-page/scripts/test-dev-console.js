@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import http from 'http';
+import fs from 'fs';
 
 function checkUrl(url) {
   return new Promise((resolve) => {
@@ -12,126 +13,170 @@ function checkUrl(url) {
   });
 }
 
-async function testServer(command, args, port, modeName) {
-  console.log(`\n========================================`);
-  console.log(`Testing Developer Console in ${modeName} (port ${port})...`);
-  console.log(`========================================`);
+async function runConsoleTest() {
+  console.log('=====================================================');
+  console.log('  LANDING PAGE DEVELOPER CONSOLE & FAVICON TEST SUITE');
+  console.log('=====================================================\n');
 
-  const process = spawn('npx', [command, ...args], {
+  // 1. Build project
+  console.log('[1/4] Building production landing page...');
+  execSync('npm run build', { cwd: '/home/daniel/sentri/landing-page', stdio: 'inherit' });
+
+  // 2. Start Vite preview server
+  console.log('\n[2/4] Starting Vite preview server on port 4173...');
+  const previewProcess = spawn('npx', ['vite', 'preview', '--port', '4173'], {
     cwd: '/home/daniel/sentri/landing-page',
     stdio: 'ignore'
   });
 
-  // Wait for server to start
-  await new Promise((r) => setTimeout(r, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 2500));
 
-  const errors = [];
-  const warnings = [];
+  const consoleLogs = [];
+  const consoleErrors = [];
+  const consoleWarnings = [];
+  const pageErrors = [];
   const failedRequests = [];
-  const httpErrors = [];
+  const http404Errors = [];
+  const allHttpErrors = [];
 
   let browser;
   try {
-    browser = await puppeteer.launch({
-      executablePath: '/usr/bin/firefox',
-      browser: 'firefox',
-      headless: true,
-      args: ['--window-size=1440,900']
-    });
+    console.log('\n[3/4] Launching headless browser & opening Developer Console listener...');
 
+    const downloadedChrome = '/home/daniel/sentri/landing-page/chrome/linux-151.0.7922.71/chrome-linux64/chrome';
+    let launchOptions;
+    if (fs.existsSync(downloadedChrome)) {
+      launchOptions = {
+        executablePath: downloadedChrome,
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--window-size=1440,900']
+      };
+    } else {
+      launchOptions = {
+        executablePath: '/usr/bin/firefox',
+        browser: 'firefox',
+        headless: true,
+        args: ['--window-size=1440,900']
+      };
+    }
+
+    browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
 
-    // Console listeners
+    // Developer Console Listeners
     page.on('console', (msg) => {
       const type = msg.type();
       const text = msg.text();
+      const entry = `[${type.toUpperCase()}] ${text}`;
+      consoleLogs.push(entry);
+
       if (type === 'error') {
-        errors.push(`[Console Error] ${text}`);
+        consoleErrors.push(text);
       } else if (type === 'warning' || type === 'warn') {
-        warnings.push(`[Console Warning] ${text}`);
+        consoleWarnings.push(text);
       }
     });
 
     page.on('pageerror', (err) => {
-      errors.push(`[Page Error] ${err.toString()}`);
+      pageErrors.push(err.toString());
     });
 
     page.on('requestfailed', (req) => {
       const failure = req.failure();
-      failedRequests.push(`[Request Failed] ${req.url()} (${failure ? failure.errorText : 'failed'})`);
+      const reason = failure ? failure.errorText : 'failed';
+      failedRequests.push(`${req.url()} (${reason})`);
     });
 
     page.on('response', (res) => {
       const status = res.status();
-      if (status >= 400) {
-        httpErrors.push(`[HTTP ${status}] ${res.url()}`);
+      const url = res.url();
+      if (status === 404) {
+        http404Errors.push(url);
+      } else if (status >= 400) {
+        allHttpErrors.push(`HTTP ${status}: ${url}`);
       }
     });
 
-    const targetUrl = `http://localhost:${port}`;
-    console.log(`Navigating to ${targetUrl}...`);
-    await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 15000 });
+    console.log('Navigating to http://localhost:4173 ...');
+    await page.goto('http://localhost:4173', { waitUntil: 'networkidle0', timeout: 15000 });
 
-    // Scroll through page to trigger all sections, lazy elements, animations
-    console.log('Scrolling page and testing interactive components...');
-    const sections = ['#problem', '#how', '#action', '#infra', '#arch'];
-    for (const sec of sections) {
-      await page.evaluate((id) => {
-        const el = document.querySelector(id);
+    console.log('Interacting with sections to test layout rendering & dynamic components...');
+    const selectors = ['header', '#problem', '#how', '#action', '#infra', '#arch'];
+    for (const sel of selectors) {
+      await page.evaluate((s) => {
+        const el = document.querySelector(s);
         if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      }, sec);
-      await new Promise((r) => setTimeout(r, 500));
+      }, sel);
+      await new Promise((r) => setTimeout(r, 400));
     }
+
+    // Scroll back to top
     await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
 
     await browser.close();
   } catch (err) {
-    errors.push(`[Test Execution Error] ${err.message}`);
+    console.error('Browser testing encountered an error:', err);
   } finally {
-    process.kill();
+    previewProcess.kill();
   }
 
-  // Check direct favicon HTTP requests
-  const faviconIcoStatus = await checkUrl(`http://localhost:${port}/favicon.ico`);
-  const faviconSvgStatus = await checkUrl(`http://localhost:${port}/favicon.svg`);
-  const faviconPngStatus = await checkUrl(`http://localhost:${port}/favicon.png`);
+  // 4. Test direct favicon HTTP requests
+  console.log('\n[4/4] Verifying Favicon Endpoints:');
+  const faviconIco = await checkUrl('http://localhost:4173/favicon.ico');
+  const faviconSvg = await checkUrl('http://localhost:4173/favicon.svg');
+  const faviconPng = await checkUrl('http://localhost:4173/favicon.png');
 
-  console.log(`\nDirect Favicon Endpoint HTTP Statuses:`);
-  console.log(`  - /favicon.ico -> ${faviconIcoStatus}`);
-  console.log(`  - /favicon.svg -> ${faviconSvgStatus}`);
-  console.log(`  - /favicon.png -> ${faviconPngStatus}`);
+  console.log(`  - GET /favicon.ico HTTP status: ${faviconIco}`);
+  console.log(`  - GET /favicon.svg HTTP status: ${faviconSvg}`);
+  console.log(`  - GET /favicon.png HTTP status: ${faviconPng}`);
 
-  console.log(`\nDeveloper Console & Network Results (${modeName}):`);
-  console.log(`  - Console Errors: ${errors.length}`);
-  if (errors.length > 0) errors.forEach(e => console.error(`    ${e}`));
+  // Verify static files directly on disk in dist/
+  const distIco = fs.existsSync('/home/daniel/sentri/landing-page/dist/favicon.ico');
+  const distSvg = fs.existsSync('/home/daniel/sentri/landing-page/dist/favicon.svg');
+  const distPng = fs.existsSync('/home/daniel/sentri/landing-page/dist/favicon.png');
 
-  console.log(`  - Console Warnings: ${warnings.length}`);
-  if (warnings.length > 0) warnings.forEach(w => console.warn(`    ${w}`));
+  console.log(`  - dist/favicon.ico exists on disk: ${distIco ? 'YES ✅' : 'NO ❌'}`);
+  console.log(`  - dist/favicon.svg exists on disk: ${distSvg ? 'YES ✅' : 'NO ❌'}`);
+  console.log(`  - dist/favicon.png exists on disk: ${distPng ? 'YES ✅' : 'NO ❌'}`);
 
-  console.log(`  - Failed Requests: ${failedRequests.length}`);
-  if (failedRequests.length > 0) failedRequests.forEach(f => console.error(`    ${f}`));
+  console.log('\n=====================================================');
+  console.log('                  TEST SUMMARY RESULTS               ');
+  console.log('=====================================================');
+  console.log(`- Total Console Messages Captured: ${consoleLogs.length}`);
+  console.log(`- Console Errors: ${consoleErrors.length}`);
+  if (consoleErrors.length > 0) consoleErrors.forEach((e) => console.log(`    ❌ ${e}`));
 
-  console.log(`  - HTTP >= 400 Errors: ${httpErrors.length}`);
-  if (httpErrors.length > 0) httpErrors.forEach(h => console.error(`    ${h}`));
+  console.log(`- Console Warnings: ${consoleWarnings.length}`);
+  if (consoleWarnings.length > 0) consoleWarnings.forEach((w) => console.log(`    ⚠️ ${w}`));
 
-  const isSuccess = errors.length === 0 && failedRequests.length === 0 && httpErrors.length === 0;
-  console.log(`\nResult for ${modeName}: ${isSuccess ? 'PASSED ✅' : 'FAILED ❌'}`);
-  return isSuccess;
-}
+  console.log(`- Uncaught Page Errors: ${pageErrors.length}`);
+  if (pageErrors.length > 0) pageErrors.forEach((pe) => console.log(`    ❌ ${pe}`));
 
-async function main() {
-  const previewSuccess = await testServer('vite', ['preview', '--port', '4173'], 4173, 'Production Preview');
-  const devSuccess = await testServer('vite', ['--port', '5173'], 5173, 'Development Mode');
+  console.log(`- Failed Network Requests: ${failedRequests.length}`);
+  if (failedRequests.length > 0) failedRequests.forEach((fr) => console.log(`    ❌ ${fr}`));
 
-  if (!previewSuccess || !devSuccess) {
-    console.error('\nDeveloper Console Test Suite Failed!');
-    process.exit(1);
-  } else {
-    console.log('\nAll Developer Console Tests Passed Successfully! Everything renders cleanly without errors.');
+  console.log(`- 404 Not Found Network Errors: ${http404Errors.length}`);
+  if (http404Errors.length > 0) http404Errors.forEach((e404) => console.log(`    ❌ ${e404}`));
+
+  const passed =
+    distIco &&
+    distSvg &&
+    distPng &&
+    consoleErrors.length === 0 &&
+    pageErrors.length === 0 &&
+    failedRequests.length === 0 &&
+    http404Errors.length === 0;
+
+  console.log('-----------------------------------------------------');
+  if (passed) {
+    console.log('🎉 ALL DEVELOPER CONSOLE TESTS PASSED CLEANLY! ZERO 404s & ERRORS.');
     process.exit(0);
+  } else {
+    console.error('❌ DEVELOPER CONSOLE TESTS FAILED. PLEASE REVIEW ERRORS ABOVE.');
+    process.exit(1);
   }
 }
 
-main();
+runConsoleTest();

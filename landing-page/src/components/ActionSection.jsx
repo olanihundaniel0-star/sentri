@@ -19,7 +19,7 @@ export function ActionSection() {
     <section id="action" data-screen-label="Sentri in action" ref={actionRef} style={{
       position: 'relative',
       background: '#120a18',
-      padding: 'clamp(72px, 9vw, 128px) clamp(18px, 5vw, 56px)'
+      padding: 'clamp(40px, 5.5vw, 80px) clamp(18px, 5vw, 56px)'
     }}>
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(233,182,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(233,182,255,0.05) 1px,transparent 1px)', backgroundSize: '64px 64px', pointerEvents: 'none' }}></div>
 
@@ -32,19 +32,19 @@ export function ActionSection() {
             fontFamily: "'Archivo', sans-serif",
             fontWeight: 900,
             fontStretch: '125%',
-            fontSize: 'clamp(20px, 6.2vw, 82px)',
-            lineHeight: 0.86,
+            fontSize: 'clamp(24px, 6vw, 82px)',
+            lineHeight: 0.88,
             letterSpacing: '-0.03em',
             textTransform: 'uppercase',
             color: '#e9d8f5',
-            margin: '14px 0 0'
+            margin: '10px 0 0'
           }}>
             <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Silent until</span>
             <span style={{ display: 'block', whiteSpace: 'nowrap' }}>it matters</span>
           </h2>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(30px, 4vw, 56px)', marginTop: 'clamp(38px, 4.5vw, 64px)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(20px, 3vw, 40px)', marginTop: 'clamp(18px, 2.5vw, 32px)' }}>
           <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ borderRadius: '48px', boxShadow: '0 0 0 1px rgba(233,182,255,0.22), 0 0 60px rgba(126,1,175,0.28), 0 40px 90px rgba(0,0,0,0.55)' }}>
               <IOSDevice dark width={320} height={700}>
