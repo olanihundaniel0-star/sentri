@@ -6,7 +6,7 @@ export function ArchitectureSection() {
   const [archStep, setArchStep] = useState(0);
 
   const archStepsData = [
-    { key: 'fetch', n: '①', title: 'Fetch', icon: '⬇', body: "Pull the user's full transaction history and social graph from BMONI via the BMONIClient protocol. Two implementations: an in-memory stub backed by seed data for development, or the real BMONI sandbox adapter using httpx with x-api-key auth.", tags: ['protocol.py', 'stub.py', 'client.py'] },
+    { key: 'fetch', n: '①', title: 'Fetch', icon: '⬇', body: "Pull the user's full transaction history and social graph from BMONI via the BMONIClient. Two implementations: an in-memory stub backed by seed data for development, or the real BMONI sandbox adapter using standard fetch with x-api-key auth.", tags: ['protocol.js', 'stub.js', 'client.js'] },
     { key: 'profile', n: '②', title: 'Profile', icon: '◆', body: 'Aggregate raw transaction history into a UserProfile: recipient rollups (who, how much, how often), a 24-hour histogram of transfer times, the set of currencies ever used, and global amount statistics. This is the behavioral fingerprint.', tags: ['builder.py', 'RecipientRollup', 'UserProfile'] },
     { key: 'score', n: '③', title: 'Score', icon: '◎', body: 'Compute the DeviationVector — 8 signals across 4 dimensions (Recipient, Amount, Temporal, Categorical). Each scorer is a pure function: no external calls, no side effects, fully deterministic. The z_score_path tracks which z-score branch was used.', tags: ['DeviationVector', 'recipient.py', 'amount.py', 'temporal.py', 'categorical.py'] },
     { key: 'threshold', n: '④', title: 'Threshold', icon: '⚡', body: 'Apply configurable thresholds to decide SILENT_PASS or INTERVENE. Crucially: recipient_familiarity and graph_proximity are structural signals — they fire on any new recipient but cannot trigger INTERVENE alone. At least one non-structural signal must also fire.', tags: ['vector.py', 'fires()', 'should_intervene()'] },
@@ -55,8 +55,8 @@ export function ArchitectureSection() {
             color: '#e9d8f5',
             margin: '14px 0 0'
           }}>
-            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Six stages,</span>
-            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>one verdict</span>
+            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>The Evaluation</span>
+            <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Pipeline</span>
           </h2>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '17px', lineHeight: 1.62, color: '#b9adc6', margin: '22px 0 0', maxWidth: '620px', textWrap: 'pretty' }}>
             Every transfer passes through a strict, ordered pipeline — from raw data to a single verdict. Select a stage to see what happens inside.
@@ -120,128 +120,263 @@ export function ArchitectureSection() {
           borderRadius: '22px',
           padding: 'clamp(26px, 3.6vw, 44px)',
           display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: '32px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+          gap: '36px',
           alignItems: 'center',
           boxShadow: '0 24px 60px rgba(8,2,14,0.5)'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '640px' }}>
+          {/* Left Column: 50% Text */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '.1em', color: '#c65fe8' }}>{active.n}</span>
               <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 900, fontStretch: '110%', fontSize: 'clamp(22px, 2.4vw, 30px)', letterSpacing: '-0.01em', textTransform: 'uppercase', color: '#f0e4f8', margin: 0 }}>{active.title}</h3>
             </div>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '16px', lineHeight: 1.65, color: '#c4b8cf', margin: 0, textWrap: 'pretty' }}>{active.body}</p>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
               {active.tags.map((tag, idx) => (
-                <span key={idx} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '.08em', padding: '5px 10px', borderRadius: '999px', background: 'rgba(126,1,175,0.3)', border: '1px solid rgba(233,182,255,0.18)', color: '#e9b6ff' }}>
+                <span key={idx} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '.08em', padding: '6px 12px', borderRadius: '999px', background: 'rgba(126,1,175,0.3)', border: '1px solid rgba(233,182,255,0.2)', color: '#e9b6ff' }}>
                   {tag}
                 </span>
               ))}
             </div>
           </div>
 
-          <div style={{ width: '180px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Right Column: 50% Glassmorphic Diagram */}
+          <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {archStep === 0 && (
-              <svg viewBox="0 0 180 140" style={{ width: '180px', height: '140px' }}>
-                <rect x="6" y="10" width="74" height="58" rx="10" fill="#2a0a3d" stroke="rgba(233,182,255,0.18)" strokeWidth="1"></rect>
-                <text x="43" y="36" fontFamily="IBM Plex Mono, monospace" fontSize="7" letterSpacing="0.08em" fill="#c65fe8" textAnchor="middle">BMONI</text>
-                <text x="43" y="50" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299" textAnchor="middle">WALLET ENGINE</text>
-                <rect x="100" y="10" width="74" height="58" rx="10" fill="#2a0a3d" stroke="rgba(233,182,255,0.18)" strokeWidth="1"></rect>
-                <text x="137" y="36" fontFamily="IBM Plex Mono, monospace" fontSize="7" letterSpacing="0.08em" fill="#c65fe8" textAnchor="middle">SENTRI</text>
-                <text x="137" y="50" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299" textAnchor="middle">COPROCESSOR</text>
-                <path d="M80 30 L100 30" stroke="#c65fe8" strokeWidth="1.5" strokeDasharray="3 3" fill="none"></path>
-                <path d="M100 48 L80 48" stroke="#8d8299" strokeWidth="1.5" strokeDasharray="3 3" fill="none"></path>
-                <text x="90" y="24" fontFamily="IBM Plex Mono, monospace" fontSize="5" fill="#8d8299" textAnchor="middle">TXN</text>
-                <text x="90" y="58" fontFamily="IBM Plex Mono, monospace" fontSize="5" fill="#8d8299" textAnchor="middle">HISTORY</text>
-                <rect x="36" y="86" width="108" height="40" rx="8" fill="rgba(126,1,175,0.2)" stroke="rgba(233,182,255,0.25)" strokeWidth="1"></rect>
-                <text x="90" y="103" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff" textAnchor="middle">TRANSACTION HISTORY</text>
-                <text x="90" y="116" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299" textAnchor="middle">+ SOCIAL GRAPH</text>
-              </svg>
-            )}
-            {archStep === 1 && (
-              <svg viewBox="0 0 180 140" style={{ width: '180px', height: '140px' }}>
-                <rect x="14" y="14" width="152" height="112" rx="12" fill="#2a0a3d" stroke="rgba(233,182,255,0.14)" strokeWidth="1"></rect>
-                <text x="90" y="34" fontFamily="IBM Plex Mono, monospace" fontSize="7" letterSpacing="0.06em" fill="#c65fe8" textAnchor="middle">USER PROFILE</text>
-                <line x1="30" y1="44" x2="150" y2="44" stroke="rgba(233,182,255,0.1)" strokeWidth="1"></line>
-                <text x="36" y="60" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">RECIPIENT ROLLUPS</text>
-                <rect x="36" y="66" width="60" height="4" rx="2" fill="#7e01af"></rect>
-                <rect x="100" y="66" width="40" height="4" rx="2" fill="#4c0a69"></rect>
-                <text x="36" y="84" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">HOUR HISTOGRAM</text>
-                <rect x="36" y="90" width="8" height="16" rx="1" fill="#5c0f80"></rect>
-                <rect x="48" y="94" width="8" height="12" rx="1" fill="#5c0f80"></rect>
-                <rect x="60" y="86" width="8" height="20" rx="1" fill="#7e01af"></rect>
-                <rect x="72" y="92" width="8" height="14" rx="1" fill="#5c0f80"></rect>
-                <rect x="84" y="98" width="8" height="8" rx="1" fill="#4c0a69"></rect>
-                <rect x="96" y="100" width="8" height="6" rx="1" fill="#3d0857"></rect>
-                <text x="120" y="84" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">CURRENCIES</text>
-                <text x="120" y="96" fontFamily="IBM Plex Mono, monospace" fontSize="8" fill="#e9b6ff">NGN</text>
-                <text x="142" y="96" fontFamily="IBM Plex Mono, monospace" fontSize="8" fill="#665073">USD</text>
-              </svg>
-            )}
-            {archStep === 2 && (
-              <svg viewBox="0 0 180 140" style={{ width: '180px', height: '140px' }}>
-                <text x="90" y="16" fontFamily="IBM Plex Mono, monospace" fontSize="7" letterSpacing="0.06em" fill="#c65fe8" textAnchor="middle">DEVIATION VECTOR</text>
-                <rect x="10" y="26" width="76" height="46" rx="8" fill="rgba(126,1,175,0.25)" stroke="rgba(233,182,255,0.15)" strokeWidth="1"></rect>
-                <text x="48" y="42" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff" textAnchor="middle">RECIPIENT</text>
-                <text x="48" y="56" fontFamily="IBM Plex Mono, monospace" fontSize="9" fill="#f0e4f8" textAnchor="middle">×2</text>
-                <rect x="94" y="26" width="76" height="46" rx="8" fill="rgba(126,1,175,0.25)" stroke="rgba(233,182,255,0.15)" strokeWidth="1"></rect>
-                <text x="132" y="42" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff" textAnchor="middle">AMOUNT</text>
-                <text x="132" y="56" fontFamily="IBM Plex Mono, monospace" fontSize="9" fill="#f0e4f8" textAnchor="middle">×3</text>
-                <rect x="10" y="80" width="76" height="46" rx="8" fill="rgba(126,1,175,0.25)" stroke="rgba(233,182,255,0.15)" strokeWidth="1"></rect>
-                <text x="48" y="96" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff" textAnchor="middle">TEMPORAL</text>
-                <text x="48" y="110" fontFamily="IBM Plex Mono, monospace" fontSize="9" fill="#f0e4f8" textAnchor="middle">×1</text>
-                <rect x="94" y="80" width="76" height="46" rx="8" fill="rgba(126,1,175,0.25)" stroke="rgba(233,182,255,0.15)" strokeWidth="1"></rect>
-                <text x="132" y="96" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff" textAnchor="middle">CATEGORICAL</text>
-                <text x="132" y="110" fontFamily="IBM Plex Mono, monospace" fontSize="9" fill="#f0e4f8" textAnchor="middle">×2</text>
-                <text x="90" y="136" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#665073" textAnchor="middle">8 SIGNALS · 4 DIMENSIONS</text>
-              </svg>
-            )}
-            {archStep === 3 && (
-              <svg viewBox="0 0 180 140" style={{ width: '180px', height: '140px' }}>
-                <circle cx="90" cy="60" r="44" fill="none" stroke="rgba(233,182,255,0.15)" strokeWidth="1"></circle>
-                <circle cx="90" cy="60" r="30" fill="none" stroke="rgba(126,1,175,0.4)" strokeWidth="1.5" strokeDasharray="4 3"></circle>
-                <circle cx="72" cy="48" r="4" fill="#5c0f80"></circle>
-                <circle cx="102" cy="53" r="4" fill="#5c0f80"></circle>
-                <circle cx="85" cy="75" r="4" fill="#5c0f80"></circle>
-                <circle cx="118" cy="72" r="5" fill="#c65fe8"></circle>
-                <circle cx="118" cy="72" r="9" fill="none" stroke="#c65fe8" strokeWidth="1" opacity="0.5"></circle>
-                <text x="90" y="118" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299" textAnchor="middle">STRUCTURAL VS NON-STRUCTURAL</text>
-                <text x="90" y="130" fontFamily="IBM Plex Mono, monospace" fontSize="7" fill="#e9b6ff" textAnchor="middle">PASS · INTERVENE</text>
-              </svg>
-            )}
-            {archStep === 4 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '160px' }}>
-                <div style={{ padding: '12px 14px', background: '#2a0a3d', borderRadius: '12px 12px 12px 4px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '.08em', color: '#c65fe8' }}>CLAUDE HAIKU</span>
-                  <div style={{ width: '90%', height: '4px', background: 'rgba(233,182,255,0.4)', borderRadius: '2px' }}></div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(233,182,255,0.4)', borderRadius: '2px' }}></div>
-                  <div style={{ width: '55%', height: '4px', background: 'rgba(233,182,255,0.4)', borderRadius: '2px' }}></div>
+              <div style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                  <div style={{
+                    flex: 1,
+                    padding: '16px 14px',
+                    background: 'rgba(42, 10, 61, 0.8)',
+                    border: '1px solid rgba(198, 95, 232, 0.4)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 4px 16px rgba(126, 1, 175, 0.2)'
+                  }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, letterSpacing: '.08em', color: '#c65fe8' }}>BMONI</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#a99bb5', textAlign: 'center' }}>WALLET ENGINE</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10.5px', fontWeight: 600, color: '#c65fe8', letterSpacing: '.06em' }}>x-api-key</span>
+                    <div style={{ width: '54px', height: '0', borderTop: '2px dashed #c65fe8' }}></div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#8d8299' }}>fetch()</span>
+                  </div>
+
+                  <div style={{
+                    flex: 1,
+                    padding: '16px 14px',
+                    background: 'rgba(126, 1, 175, 0.3)',
+                    border: '1px solid rgba(233, 182, 255, 0.5)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 4px 20px rgba(126, 1, 175, 0.3)'
+                  }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, letterSpacing: '.08em', color: '#e9b6ff' }}>SENTRI</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#f0e4f8', textAlign: 'center' }}>COPROCESSOR</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 4px' }}>
-                  <svg viewBox="0 0 12 12" style={{ width: '10px', height: '10px', flex: 'none' }}><path d="M2 6l3 3 5-5" fill="none" stroke="#c65fe8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path></svg>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', letterSpacing: '.06em', color: '#8d8299' }}>VALIDATOR PASS → SHIP</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 4px' }}>
-                  <svg viewBox="0 0 12 12" style={{ width: '10px', height: '10px', flex: 'none' }}><path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="#8d8299" strokeWidth="1.5" strokeLinecap="round"></path></svg>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', letterSpacing: '.06em', color: '#665073' }}>FAIL → TEMPLATE FALLBACK</span>
+
+                <div style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: 'rgba(30, 10, 48, 0.7)',
+                  border: '1.5px dashed rgba(233, 182, 255, 0.25)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  textAlign: 'center'
+                }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 600, color: '#e9b6ff', letterSpacing: '.04em' }}>TRANSACTION HISTORY</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#b9adc6' }}>+ SOCIAL GRAPH DATA</span>
                 </div>
               </div>
             )}
+
+            {archStep === 1 && (
+              <div style={{
+                width: '100%',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px'
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#c65fe8', letterSpacing: '.06em', textAlign: 'center' }}>
+                  USER PROFILE AGGREGATION
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ background: 'rgba(42, 10, 61, 0.6)', border: '1px solid rgba(233, 182, 255, 0.15)', borderRadius: '10px', padding: '12px' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#8d8299', display: 'block', marginBottom: '6px' }}>RECIPIENT ROLLUPS</span>
+                    <div style={{ width: '100%', height: '8px', background: '#7e01af', borderRadius: '4px', marginBottom: '4px' }}></div>
+                    <div style={{ width: '65%', height: '8px', background: '#4c0a69', borderRadius: '4px' }}></div>
+                  </div>
+                  <div style={{ background: 'rgba(42, 10, 61, 0.6)', border: '1px solid rgba(233, 182, 255, 0.15)', borderRadius: '10px', padding: '12px' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#8d8299', display: 'block', marginBottom: '6px' }}>CURRENCIES</span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#e9b6ff' }}>NGN</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#665073' }}>USD</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(42, 10, 61, 0.6)', border: '1px solid rgba(233, 182, 255, 0.15)', borderRadius: '10px', padding: '12px' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#8d8299', display: 'block', marginBottom: '8px' }}>24-HOUR HISTOGRAM</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '36px' }}>
+                    <div style={{ flex: 1, height: '40%', background: '#5c0f80', borderRadius: '2px' }}></div>
+                    <div style={{ flex: 1, height: '60%', background: '#5c0f80', borderRadius: '2px' }}></div>
+                    <div style={{ flex: 1, height: '100%', background: '#7e01af', borderRadius: '2px' }}></div>
+                    <div style={{ flex: 1, height: '70%', background: '#5c0f80', borderRadius: '2px' }}></div>
+                    <div style={{ flex: 1, height: '30%', background: '#4c0a69', borderRadius: '2px' }}></div>
+                    <div style={{ flex: 1, height: '20%', background: '#3d0857', borderRadius: '2px' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {archStep === 2 && (
+              <div style={{
+                width: '100%',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#c65fe8', letterSpacing: '.06em', textAlign: 'center' }}>
+                  DEVIATION VECTOR (8 SIGNALS)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ background: 'rgba(126, 1, 175, 0.25)', border: '1px solid rgba(233, 182, 255, 0.2)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#e9b6ff', display: 'block' }}>RECIPIENT</span>
+                    <span style={{ fontFamily: "'Archivo', sans-serif", fontSize: '16px', fontWeight: 900, color: '#f0e4f8' }}>2 SIGNALS</span>
+                  </div>
+                  <div style={{ background: 'rgba(126, 1, 175, 0.25)', border: '1px solid rgba(233, 182, 255, 0.2)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#e9b6ff', display: 'block' }}>AMOUNT</span>
+                    <span style={{ fontFamily: "'Archivo', sans-serif", fontSize: '16px', fontWeight: 900, color: '#f0e4f8' }}>3 SIGNALS</span>
+                  </div>
+                  <div style={{ background: 'rgba(126, 1, 175, 0.25)', border: '1px solid rgba(233, 182, 255, 0.2)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#e9b6ff', display: 'block' }}>TEMPORAL</span>
+                    <span style={{ fontFamily: "'Archivo', sans-serif", fontSize: '16px', fontWeight: 900, color: '#f0e4f8' }}>1 SIGNAL</span>
+                  </div>
+                  <div style={{ background: 'rgba(126, 1, 175, 0.25)', border: '1px solid rgba(233, 182, 255, 0.2)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#e9b6ff', display: 'block' }}>CATEGORICAL</span>
+                    <span style={{ fontFamily: "'Archivo', sans-serif", fontSize: '16px', fontWeight: 900, color: '#f0e4f8' }}>2 SIGNALS</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {archStep === 3 && (
+              <div style={{
+                width: '100%',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#c65fe8', letterSpacing: '.06em' }}>
+                  THRESHOLD EVALUATION
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ padding: '10px 14px', background: 'rgba(42, 10, 61, 0.6)', border: '1px solid rgba(233, 182, 255, 0.15)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#8d8299' }}>STRUCTURAL ONLY</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700, color: '#8d8299' }}>SILENT_PASS</span>
+                  </div>
+                  <div style={{ padding: '10px 14px', background: 'rgba(126, 1, 175, 0.3)', border: '1px solid rgba(198, 95, 232, 0.4)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#f0e4f8' }}>NON-STRUCTURAL FIRED</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700, color: '#e9b6ff' }}>INTERVENE</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {archStep === 4 && (
+              <div style={{
+                width: '100%',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ padding: '12px 14px', background: '#2a0a3d', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700, color: '#c65fe8' }}>CLAUDE SYNTHESIZER</span>
+                  <div style={{ width: '90%', height: '4px', background: 'rgba(233,182,255,0.4)', borderRadius: '2px' }}></div>
+                  <div style={{ width: '100%', height: '4px', background: 'rgba(233,182,255,0.4)', borderRadius: '2px' }}></div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#c65fe8' }}>✓ VALIDATOR PASS → SHIP EXPLANATION</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#8d8299' }}>✕ FAIL → TEMPLATE FALLBACK</span>
+                </div>
+              </div>
+            )}
+
             {archStep === 5 && (
-              <svg viewBox="0 0 180 140" style={{ width: '180px', height: '140px' }}>
-                <rect x="24" y="20" width="132" height="100" rx="12" fill="#2a0a3d" stroke="rgba(233,182,255,0.12)" strokeWidth="1"></rect>
-                <text x="90" y="40" fontFamily="IBM Plex Mono, monospace" fontSize="7" letterSpacing="0.06em" fill="#c65fe8" textAnchor="middle">AUDIT LOG</text>
-                <line x1="40" y1="50" x2="140" y2="50" stroke="rgba(233,182,255,0.1)" strokeWidth="1"></line>
-                <text x="46" y="64" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">user_id</text>
-                <text x="100" y="64" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#665073">user_001</text>
-                <text x="46" y="76" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">decision</text>
-                <text x="100" y="76" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#e9b6ff">INTERVENE</text>
-                <text x="46" y="88" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">explanation</text>
-                <text x="100" y="88" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#665073">"You have…"</text>
-                <text x="46" y="100" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#8d8299">mode</text>
-                <text x="100" y="100" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#665073">FIRE + FORGET</text>
-                <text x="90" y="132" fontFamily="IBM Plex Mono, monospace" fontSize="6" fill="#665073" textAnchor="middle">ERRORS DO NOT AFFECT VERDICT</text>
-              </svg>
+              <div style={{
+                width: '100%',
+                padding: '20px',
+                background: 'rgba(20, 9, 32, 0.7)',
+                border: '1px solid rgba(233, 182, 255, 0.18)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: '#c65fe8', textAlign: 'center', marginBottom: '4px' }}>FIRE-AND-FORGET AUDIT LOG</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px' }}>
+                  <span style={{ color: '#8d8299' }}>user_id</span>
+                  <span style={{ color: '#f0e4f8' }}>user_001</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px' }}>
+                  <span style={{ color: '#8d8299' }}>decision</span>
+                  <span style={{ color: '#e9b6ff', fontWeight: 700 }}>INTERVENE</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px' }}>
+                  <span style={{ color: '#8d8299' }}>explanation</span>
+                  <span style={{ color: '#c4b8cf' }}>"You have not sent..."</span>
+                </div>
+                <div style={{ textAlign: 'center', marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#665073' }}>
+                  ERRORS DO NOT AFFECT VERDICT
+                </div>
+              </div>
             )}
           </div>
         </div>
